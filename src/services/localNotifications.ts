@@ -51,6 +51,10 @@ const schedule = async (opts: { id?: number; title: string; body?: string; sched
           schedule: { at: scheduleAt },
           // Use extra data to carry reminder info so action handler can map actions
           extra: opts.extra || { reminderId: opts.id || Date.now() },
+          android: {
+            // Persist notification for 10 seconds (10000 ms)
+            timeoutAfter: 10000,
+          },
         },
       ];
 

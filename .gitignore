@@ -7,8 +7,7 @@ pnpm-lock.yaml
 dist/
 .vite/
 
-### Package lockfiles - keep pnpm as the canonical manager
-package-lock.json
+### Package lockfiles
 yarn.lock
 
 ### Capacitor / native builds
@@ -34,3 +33,5 @@ yarn-error.log*
 *.env.*.local
 /.env
 .env
+localhost.pem
+localhost-key.pem

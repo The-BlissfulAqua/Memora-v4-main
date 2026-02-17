@@ -5,6 +5,7 @@ import { Reminder } from '../../types';
 import PillIcon from '../icons/PillIcon';
 import ForkKnifeIcon from '../icons/ForkKnifeIcon';
 import GlassWaterIcon from '../icons/GlassWaterIcon';
+import toastService from '../../services/toastService';
 
 
 const ReminderForm: React.FC = () => {
@@ -16,7 +17,7 @@ const ReminderForm: React.FC = () => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if(!title || !time) {
-            alert('Please fill out all fields.');
+            toastService.show('Please fill out all fields.', 'warning');
             return;
         }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Beacon } from '../types';
+const isDev = import.meta.env.DEV;
 
 // Web Bluetooth API is experimental, so types might not be in standard lib.
 declare global {
@@ -81,7 +82,7 @@ export const useBeaconScanner = () => {
         if (isScanning) return;
 
         try {
-            console.log("Requesting Bluetooth LE Scan...");
+            if (isDev) console.debug('Requesting Bluetooth LE Scan...');
             setIsScanning(true);
             setError(null);
             
@@ -89,7 +90,7 @@ export const useBeaconScanner = () => {
             const scan = await navigator.bluetooth.requestLEScan({ acceptAllAdvertisements: true });
             scanControllerRef.current = scan;
             
-            console.log("Scan started. Listening for advertisements...");
+            if (isDev) console.debug('Scan started. Listening for advertisements...');
             (navigator.bluetooth as any).addEventListener('advertisementreceived', handleAdvertisement);
 
         } catch (err) {
@@ -107,7 +108,7 @@ export const useBeaconScanner = () => {
         if (scanControllerRef.current) {
             scanControllerRef.current.stop();
             scanControllerRef.current = null;
-            console.log("BLE scan stopped.");
+            if (isDev) console.debug('BLE scan stopped.');
         }
         setIsScanning(false);
         if (navigator.bluetooth) {

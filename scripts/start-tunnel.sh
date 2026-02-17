@@ -24,8 +24,10 @@ function check_command() {
   fi
 }
 
-check_command pnpm
+check_command npm
 check_command ngrok
+check_command curl
+check_command node
 
 # If NGROK_AUTH_TOKEN provided, ensure ngrok is authed
 if [[ -n "${NGROK_AUTH_TOKEN:-}" ]]; then
@@ -36,7 +38,7 @@ fi
 echo "Launching dev server (background)..."
 # Start dev server in background, redirect output to a logfile
 LOGFILE=".ngrok-dev.log"
-pnpm run dev > "$LOGFILE" 2>&1 &
+npm run dev > "$LOGFILE" 2>&1 &
 DEV_PID=$!
 
 sleep 1
@@ -53,7 +55,7 @@ for i in $(seq 1 15); do
   sleep 1
   # Try to detect public URL from the ngrok local API (if available)
   if curl -s http://127.0.0.1:4040/api/tunnels >/dev/null 2>&1; then
-    PUB=$(curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url' 2>/dev/null || true)
+    PUB=$(curl -s http://127.0.0.1:4040/api/tunnels | node -e "let data='';process.stdin.on('data',d=>data+=d);process.stdin.on('end',()=>{try{const j=JSON.parse(data);const u=(j.tunnels&&j.tunnels[0]&&j.tunnels[0].public_url)||'';process.stdout.write(u);}catch{process.stdout.write('')}});" 2>/dev/null || true)
     if [[ -n "$PUB" && "$PUB" != "null" ]]; then
       echo "ngrok tunnel established: $PUB"
       echo "Dev server PID: $DEV_PID" > .ngrok.meta

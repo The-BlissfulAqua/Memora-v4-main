@@ -3,11 +3,35 @@ import { getAICompanionChatResponse, isGeminiConfigured, missingApiKeyError } fr
 import MicrophoneIcon from '../icons/MicrophoneIcon';
 
 
-// fix: Add types for browser-specific Speech Recognition API
+interface SpeechRecognitionEventLike {
+  resultIndex: number;
+  results: ArrayLike<ArrayLike<{ transcript: string }>> & {
+    [index: number]: ArrayLike<{ transcript: string }> & { isFinal?: boolean };
+  };
+}
+
+interface SpeechRecognitionErrorEventLike {
+  error?: string;
+}
+
+interface SpeechRecognitionLike {
+  continuous: boolean;
+  lang: string;
+  interimResults: boolean;
+  onstart: (() => void) | null;
+  onend: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
 declare global {
   interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
   }
 }
 
@@ -27,9 +51,11 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [sendTranscriptOnEnd, setSendTranscriptOnEnd] = useState(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
   const [supportsSpeech, setSupportsSpeech] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const transcriptRef = useRef('');
+  const isLoadingRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -39,30 +65,33 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
   
 
-  const handleSend = useCallback(async () => {
-    if (input.trim() === '' || isLoading) return;
-    const userMessage: Message = { text: input, sender: 'user' };
-    setMessages(prev => [...prev, userMessage]);
-    const textToSend = input;
-    setInput('');
-    setIsLoading(true);
-    const aiResponseText = await getAICompanionChatResponse(textToSend);
-    const aiMessage: Message = { text: aiResponseText, sender: 'ai' };
-    setMessages(prev => [...prev, aiMessage]);
-    setIsLoading(false);
-  }, [input, isLoading]);
+  const handleSendText = useCallback(async (rawText: string) => {
+    const textToSend = rawText.trim();
+    if (textToSend === '' || isLoadingRef.current) return;
 
-  // This effect triggers sending the message when speech recognition ends.
-  useEffect(() => {
-    if (sendTranscriptOnEnd) {
-      if (input.trim() !== '') {
-        handleSend();
-      }
-      setSendTranscriptOnEnd(false); // Reset the trigger
+    const userMessage: Message = { text: textToSend, sender: 'user' };
+    setMessages(prev => [...prev, userMessage]);
+    setSpeechError(null);
+    setIsLoading(true);
+    setInput('');
+    try {
+      const aiResponseText = await getAICompanionChatResponse(textToSend);
+      const aiMessage: Message = { text: aiResponseText, sender: 'ai' };
+      setMessages(prev => [...prev, aiMessage]);
+    } finally {
+      setIsLoading(false);
     }
-  }, [sendTranscriptOnEnd, input, handleSend]);
+  }, []);
+
+  const handleSend = useCallback(async () => {
+    await handleSendText(input);
+  }, [handleSendText, input]);
 
   // Set up speech recognition
   useEffect(() => {
@@ -73,13 +102,44 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
         recognition.continuous = false;
         recognition.lang = 'en-US';
         recognition.interimResults = false;
-        recognition.onstart = () => setIsListening(true);
+        recognition.onstart = () => {
+          transcriptRef.current = '';
+          setSpeechError(null);
+          setIsListening(true);
+        };
         recognition.onend = () => {
           setIsListening(false);
-          setSendTranscriptOnEnd(true); // Trigger sending the message
+          const transcript = transcriptRef.current.trim();
+          transcriptRef.current = '';
+          if (transcript) {
+            handleSendText(transcript);
+          }
         };
-        recognition.onresult = (event: any) => setInput(event.results[event.results.length - 1][0].transcript);
-        recognition.onerror = (event: any) => { console.error("Speech recognition error:", event.error); setIsListening(false); };
+        recognition.onresult = (event: SpeechRecognitionEventLike) => {
+          const start = event.resultIndex ?? 0;
+          let latest = '';
+          for (let i = start; i < event.results.length; i += 1) {
+            const result = event.results[i];
+            if (result && result[0]) {
+              latest = `${latest} ${result[0].transcript}`.trim();
+            }
+          }
+          if (latest) {
+            transcriptRef.current = latest;
+            setInput(latest);
+          }
+        };
+        recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
+          console.error('Speech recognition error:', event.error);
+          if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            setSpeechError('Microphone access was blocked. Please allow microphone permission.');
+          } else if (event.error === 'no-speech') {
+            setSpeechError('No speech detected. Please try again.');
+          } else {
+            setSpeechError('Voice input failed. Please try again or type your message.');
+          }
+          setIsListening(false);
+        };
         recognitionRef.current = recognition;
     } else {
         setSupportsSpeech(false);
@@ -88,13 +148,24 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
     return () => {
         if (recognitionRef.current) recognitionRef.current.stop();
     };
-  }, []);
+  }, [handleSendText]);
 
 
   const handleListen = () => {
-      if (!recognitionRef.current) return alert("Sorry, your browser doesn't support voice recognition.");
-      if (isListening) recognitionRef.current.stop();
-      else { setInput(''); recognitionRef.current.start(); }
+      if (!recognitionRef.current) return;
+      if (isListening) {
+        recognitionRef.current.stop();
+        return;
+      }
+      transcriptRef.current = '';
+      setInput('');
+      setSpeechError(null);
+      try {
+        recognitionRef.current.start();
+      } catch (error) {
+        console.error('Failed to start speech recognition:', error);
+        setSpeechError('Could not start voice input. Please try again.');
+      }
   };
 
   return (
@@ -150,13 +221,14 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder={isListening ? 'Listening...' : "Type a message..."}
           className="flex-grow px-4 py-3 bg-slate-800/70 border border-slate-700 rounded-full text-white placeholder-slate-400 focus:outline-none focus:border-slate-600 focus:ring-1 focus:ring-slate-600 transition-colors disabled:bg-slate-800/40 disabled:cursor-not-allowed"
-          disabled={isLoading || isListening || !isGeminiConfigured}
+          disabled={isLoading || !isGeminiConfigured}
         />
         {supportsSpeech && recognitionRef.current && (
             <button
+              type="button"
               onClick={handleListen}
               disabled={isLoading || !isGeminiConfigured}
               className={`flex-shrink-0 w-12 h-12 rounded-full transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 ${
@@ -170,6 +242,7 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
             </button>
         )}
         <button
+          type="button"
           onClick={handleSend}
           disabled={isLoading || input.trim() === '' || !isGeminiConfigured}
           className="flex-shrink-0 w-12 h-12 bg-slate-700 text-white font-bold rounded-full disabled:bg-slate-800/40 disabled:cursor-not-allowed hover:bg-slate-600 transition-colors flex items-center justify-center"
@@ -178,6 +251,9 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
           <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg>
         </button>
       </div>
+      {speechError && (
+        <p className="mt-2 text-sm text-amber-300">{speechError}</p>
+      )}
     </div>
   );
 };

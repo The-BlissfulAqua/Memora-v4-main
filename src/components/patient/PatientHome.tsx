@@ -9,6 +9,7 @@ import ImageIcon from '../icons/ImageIcon';
 import VoicemailIcon from '../icons/VoicemailIcon';
 import MusicIcon from '../icons/MusicIcon';
 import SOSSlider from './SOSSlider';
+import toastService from '../../services/toastService';
 
 interface PatientHomeProps {
   setScreen: (screen: PatientScreen) => void;
@@ -39,7 +40,7 @@ const PatientHome: React.FC<PatientHomeProps> = ({ setScreen }) => {
       type: 'SOS' as const,
     };
     dispatch({ type: 'TRIGGER_SOS', payload: newAlert });
-    alert('Caregiver and Family have been notified!');
+    toastService.show('Caregiver and Family have been notified.', 'success');
   };
 
   const menuItems = [

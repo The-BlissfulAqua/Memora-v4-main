@@ -22,9 +22,6 @@ function ensureAudioElement(kind: 'sos' | 'fall' | 'reminder'): HTMLAudioElement
     // playsInline to avoid Safari going fullscreen on iOS
     (sosAudio as any).playsInline = true;
     try { sosAudio.load(); } catch (e) { /* ignore */ }
-  console.debug('[soundService] created sosAudio', { src: sosAudio.src, loop: sosAudio.loop, preload: sosAudio.preload });
-  sosAudio.addEventListener('play', () => console.debug('[soundService] sosAudio play event'));
-    sosAudio.addEventListener('pause', () => console.debug('[soundService] sosAudio pause event'));
     sosAudio.addEventListener('error', (ev) => console.error('[soundService] sosAudio error', ev));
     return sosAudio;
   }
@@ -35,9 +32,6 @@ function ensureAudioElement(kind: 'sos' | 'fall' | 'reminder'): HTMLAudioElement
     fallAudio.preload = 'auto';
     (fallAudio as any).playsInline = true;
     try { fallAudio.load(); } catch (e) { /* ignore */ }
-  console.debug('[soundService] created fallAudio', { src: fallAudio.src, loop: fallAudio.loop, preload: fallAudio.preload });
-  fallAudio.addEventListener('play', () => console.debug('[soundService] fallAudio play event'));
-    fallAudio.addEventListener('pause', () => console.debug('[soundService] fallAudio pause event'));
     fallAudio.addEventListener('error', (ev) => console.error('[soundService] fallAudio error', ev));
     return fallAudio;
   }
@@ -47,8 +41,6 @@ function ensureAudioElement(kind: 'sos' | 'fall' | 'reminder'): HTMLAudioElement
   reminderAudio.preload = 'auto';
   (reminderAudio as any).playsInline = true;
   try { reminderAudio.load(); } catch (e) { /* ignore */ }
-  console.debug('[soundService] created reminderAudio', { src: reminderAudio.src, loop: reminderAudio.loop, preload: reminderAudio.preload });
-  reminderAudio.addEventListener('play', () => console.debug('[soundService] reminderAudio play event'));
   reminderAudio.addEventListener('error', (ev) => console.error('[soundService] reminderAudio error', ev));
   return reminderAudio;
 }
@@ -62,7 +54,6 @@ const soundService = {
   unlock: async (): Promise<void> => {
     if (isUnlocked) return;
     try {
-      console.log('Attempting to unlock audio context...');
       const audio = ensureAudioElement('sos');
       audio.muted = true;
       const promise = audio.play();
@@ -73,7 +64,6 @@ const soundService = {
           audio.currentTime = 0;
           audio.muted = false;
           isUnlocked = true;
-          console.log('Audio context unlocked successfully.');
         } catch (err) {
           console.error('Audio unlock failed. Subsequent sounds may not play until another interaction.', err);
           // Leave isUnlocked false; caller may attempt again later on user interaction.
@@ -87,7 +77,6 @@ const soundService = {
   playSosAlert: () => {
     try {
       const audio = ensureAudioElement('sos');
-      console.debug('[soundService] playSosAlert -> src=', audio.src);
       audio.muted = false;
       audio.volume = 1.0;
       // Ensure we start from the beginning for loudness
@@ -129,7 +118,6 @@ const soundService = {
   playFallAlert: () => {
     try {
       const audio = ensureAudioElement('fall');
-      console.debug('[soundService] playFallAlert -> src=', audio.src);
       audio.muted = false;
       audio.volume = 1.0;
       audio.currentTime = 0;
@@ -174,14 +162,12 @@ const soundService = {
   playReminderAlert: (): HTMLAudioElement | null => {
     try {
       const audio = ensureAudioElement('reminder');
-      console.debug('[soundService] playReminderAlert -> src=', audio.src);
       audio.muted = false;
       audio.volume = 1.0;
       audio.currentTime = 0;
 
       const doPlay = () => {
-        console.debug('[soundService] reminder audio state before play', { paused: audio.paused, readyState: audio.readyState, muted: audio.muted, volume: audio.volume });
-        if (audio.paused) audio.play().then(() => { _isReminderPlaying = true; console.debug('[soundService] reminder audio started playing'); }).catch(e => console.error('Error playing reminder sound:', e));
+        if (audio.paused) audio.play().then(() => { _isReminderPlaying = true; }).catch(e => console.error('Error playing reminder sound:', e));
       };
 
       if (!isUnlocked) {

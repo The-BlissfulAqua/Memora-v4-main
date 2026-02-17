@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect, useRef } from 'react';
 import realtimeService from '../services/realtimeService';
 import { Reminder, Alert, AppActionAll, Memory, EventLogItem, SharedQuote, VoiceMessage, SenderRole, CurrentUser, ViewMode } from '../types';
+import { shouldApplyRemoteAction } from './remoteActionRouting';
 // Import bundled voice message samples so deploys (e.g., Vercel) include them and avoid 404s
 import voiceLeo from '../assets/audio/voice_leo.mp3';
 import voiceSam from '../assets/audio/voice_sam.mp3';
@@ -19,7 +20,7 @@ interface AppState {
   currentView?: ViewMode;
 }
 
-const initialState: AppState = {
+export const initialState: AppState = {
   // Start with no pre-existing demo reminders. Caregivers can add reminders using the UI.
   reminders: [],
   alerts: [],
@@ -62,7 +63,7 @@ const initialState: AppState = {
   currentView: ViewMode.PATIENT,
 };
 
-const appReducer = (state: AppState, action: AppActionAll): AppState => {
+export const appReducer = (state: AppState, action: AppActionAll): AppState => {
   switch (action.type) {
     case 'COMPLETE_REMINDER':
       const completedReminder = state.reminders.find(r => r.id === action.payload);
@@ -219,7 +220,22 @@ const AppContext = createContext<{
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
   const appliedRemoteActions = useRef(new Set<string>());
+  const appliedRemoteActionOrder = useRef<string[]>([]);
   const latestViewRef = useRef(state.currentView);
+  const MAX_REMOTE_ACTION_IDS = 2000;
+
+  const rememberRemoteActionId = (id: string) => {
+    if (appliedRemoteActions.current.has(id)) return;
+    appliedRemoteActions.current.add(id);
+    appliedRemoteActionOrder.current.push(id);
+
+    while (appliedRemoteActionOrder.current.length > MAX_REMOTE_ACTION_IDS) {
+      const oldest = appliedRemoteActionOrder.current.shift();
+      if (oldest) {
+        appliedRemoteActions.current.delete(oldest);
+      }
+    }
+  };
 
   // keep latestViewRef up-to-date so realtime callbacks can decide whether
   // to apply incoming actions based on the current dashboard view.
@@ -235,61 +251,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // Ignore if it's already applied (simple dedupe using an id)
         const rid = action?._remoteId;
         if (rid && appliedRemoteActions.current.has(rid)) return;
-        if (rid) appliedRemoteActions.current.add(rid);
+        if (rid) rememberRemoteActionId(rid);
 
-        // Decide whether to apply this remote action locally based on type
-        // and the current dashboard view. This lets the server broadcast
-        // to all clients but have each client selectively apply actions
-        // (e.g., reminders and memories apply only to PATIENT view).
         const view = latestViewRef.current;
-
-        const applyAction = (act: any) => dispatch(act);
-
-        switch (action?.type) {
-          // UI-only actions: never propagate from remote
-          case 'SET_VIEW_MODE':
-          case 'LOGIN_SUCCESS':
-          case 'SET_DEV_MODE':
-            // ignore
-            break;
-
-          case 'TRIGGER_SOS':
-            // Alerts should be visible to CAREGIVER and FAMILY dashboards
-            if (view === undefined) break;
-            if (view === 'CAREGIVER' || view === 'FAMILY') applyAction(action);
-            break;
-
-          case 'ADD_REMINDER':
-          case 'DELETE_REMINDER':
-          case 'MARK_REMINDER_NOTIFIED':
-          case 'COMPLETE_REMINDER':
-            // Reminder state is shared across all dashboards
-            applyAction(action);
-            break;
-
-          case 'ADD_VOICE_MESSAGE': {
-            // route voice messages based on senderRole
-            const senderRole = action?.payload?.senderRole;
-            if (!senderRole) break;
-            if (senderRole === 'FAMILY' || senderRole === 'CAREGIVER') {
-              // family/caregiver messages -> only patient's dashboard
-              if (view === 'PATIENT') applyAction(action);
-            } else if (senderRole === 'PATIENT') {
-              // patient's messages -> caregiver and family dashboards
-              if (view === 'CAREGIVER' || view === 'FAMILY') applyAction(action);
-            }
-            break;
-          }
-
-          case 'ADD_MEMORY':
-          case 'ADD_QUOTE':
-            // Memories and comforting thoughts from family -> patient only
-            if (view === 'PATIENT') applyAction(action);
-            break;
-
-          default:
-            // Fallback: apply other actions everywhere
-            applyAction(action);
+        if (shouldApplyRemoteAction(view, action)) {
+          dispatch(action);
         }
       } catch (e) {
         console.warn('Error applying remote action', e);

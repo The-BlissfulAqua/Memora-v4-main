@@ -8,6 +8,56 @@ const app = express();
 app.use(bodyParser.json());
 const fs = require('fs');
 const path = require('path');
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+
+const companionSystemInstruction = `You are Digi, an AI companion for a person with dementia. Your core purpose is to provide comfort, gentle engagement, and a sense of calm. Follow these rules strictly:
+1. Personality: Be extremely patient, friendly, positive, and reassuring. Always use a gentle and warm tone.
+2. Simplicity: Keep responses very short and use simple everyday words.
+3. Patience: If users repeat themselves, respond kindly as if it is the first time.
+4. Empathy: Validate feelings gently and avoid harsh corrections.
+5. Encouragement: Do not test memory; offer gentle prompts and reassuring questions.
+6. Engagement: Ask one simple supportive question at a time.`;
+
+async function generateGeminiText({ prompt, systemInstruction }) {
+  if (!GEMINI_API_KEY) {
+    const err = new Error('Missing server GEMINI_API_KEY');
+    err.statusCode = 503;
+    throw err;
+  }
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    }
+  );
+
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const err = new Error(body?.error?.message || `Gemini request failed (${response.status})`);
+    err.statusCode = response.status;
+    throw err;
+  }
+
+  const text =
+    body?.candidates?.[0]?.content?.parts
+      ?.map((p) => (typeof p?.text === 'string' ? p.text : ''))
+      .join('')
+      .trim() || '';
+  if (!text) {
+    const err = new Error('Gemini returned empty content');
+    err.statusCode = 502;
+    throw err;
+  }
+
+  return text;
+}
 
 // Simple CORS for demo clients
 app.use((req, res, next) => {
@@ -32,6 +82,31 @@ app.use('/uploads', express.static(uploadsDir, {
 
 // Simple health
 app.get('/health', (req, res) => res.json({ ok: true }));
+
+app.post('/api/ai/companion', async (req, res) => {
+  try {
+    const prompt = `${req.body?.prompt || ''}`.trim();
+    if (!prompt) return res.status(400).json({ error: 'prompt is required' });
+    const text = await generateGeminiText({ prompt, systemInstruction: companionSystemInstruction });
+    return res.json({ text });
+  } catch (err) {
+    const status = err.statusCode || 500;
+    return res.status(status).json({ error: err.message || 'AI companion request failed' });
+  }
+});
+
+app.post('/api/ai/quote', async (_req, res) => {
+  try {
+    const text = await generateGeminiText({
+      prompt: 'Generate one short, comforting, uplifting sentence suitable for someone experiencing memory loss.',
+      systemInstruction: 'Return only one plain sentence, warm and reassuring.',
+    });
+    return res.json({ text });
+  } catch (err) {
+    const status = err.statusCode || 500;
+    return res.status(status).json({ error: err.message || 'AI quote request failed' });
+  }
+});
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });

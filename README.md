@@ -71,7 +71,7 @@ Follow these instructions to get a copy of the project up and running on your lo
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (v18 or newer recommended)
-- `npm`, `yarn`, or `pnpm` package manager
+- `npm` package manager (project scripts and docs use npm)
 - A valid **Google Gemini API Key**. You can get one from [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 ### Installation & Setup
@@ -87,12 +87,15 @@ Follow these instructions to get a copy of the project up and running on your lo
     npm install
     ```
 
-3.  **Set up your environment variables:**
-    Create a file named `.env` in the root of the project. This file will hold your secret API key. Add your Gemini API key to it like this:
+3.  **Set up your environment variables (server-side AI key):**
+    The Gemini key must be configured on the backend, not in the browser bundle.
+    For local development with the demo server, add this in `demo-server/.env` (or your shell):
     ```
-    VITE_API_KEY=YOUR_GEMINI_API_KEY
+    GEMINI_API_KEY=YOUR_GEMINI_API_KEY
     ```
-    *This is a crucial step. The AI features will not work without it.*
+    Optional:
+    - `GEMINI_MODEL` (defaults to `gemini-2.5-flash`)
+    - `VITE_AI_API_BASE_URL` for frontend deployments where AI API is hosted on a different origin.
 
 ## 🏃 Running the Development Server
 

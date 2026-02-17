@@ -11,6 +11,7 @@ import VoiceMessagePlayer from '../shared/VoiceMessagePlayer';
 import VoiceRecorder from '../shared/VoiceRecorder';
 import soundService from '../../services/soundService';
 import MusicIcon from '../icons/MusicIcon';
+import toastService from '../../services/toastService';
 
 // Helper to check if a reminder is due (time-only, compares hh:mm against now)
 function isReminderDue(reminderTime: string) {
@@ -62,7 +63,7 @@ const CaregiverView: React.FC = () => {
               type: 'FALL'
           }
       });
-      alert('Fall alert sent!');
+      toastService.show('Fall alert sent.', 'warning');
   }
 
   const handleNewVoiceMessage = (audioUrl: string, duration: number) => {

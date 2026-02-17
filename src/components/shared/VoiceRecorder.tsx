@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import MicrophoneIcon from '../icons/MicrophoneIcon';
+import toastService from '../../services/toastService';
 
 interface VoiceRecorderProps {
   onNewMessage: (audioUrl: string, duration: number) => void;
@@ -68,7 +69,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onNewMessage, disabled = 
           if (Permissions && typeof Permissions.request === 'function') {
             const res = await Permissions.request({ name: 'microphone' as any });
             if (res && res.state === 'denied') {
-              alert('Microphone permission denied. Please enable it in system settings.');
+              toastService.show('Microphone permission denied. Please enable it in system settings.', 'error', 5000);
               return;
             }
           }
@@ -80,12 +81,12 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onNewMessage, disabled = 
       console.warn('Permission check error', err);
     }
     if (micPermission === 'denied') {
-        alert("Microphone access has been blocked. Please enable it in your browser's site settings to record a message.");
+        toastService.show("Microphone access has been blocked. Please enable it in browser site settings.", 'error', 5000);
         return;
     }
     
     if (!supportedMimeType) {
-        alert("Sorry, your browser doesn't support audio recording.");
+        toastService.show("Sorry, this browser doesn't support audio recording.", 'error');
         return;
     }
 
@@ -149,9 +150,9 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onNewMessage, disabled = 
     } catch (error) {
       console.error("Error starting recording:", error);
       if (error instanceof DOMException && (error.name === "NotAllowedError" || error.name === "PermissionDeniedError")) {
-          alert("Could not start recording. You need to grant microphone access.");
+          toastService.show('Could not start recording. Microphone permission is required.', 'error');
       } else {
-          alert("Could not start recording. Please ensure your microphone is working.");
+          toastService.show('Could not start recording. Please ensure your microphone is working.', 'error');
       }
     }
   };

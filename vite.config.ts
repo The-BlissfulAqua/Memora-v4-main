@@ -1,15 +1,11 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
 import type { ServerOptions as HttpsServerOptions } from 'https';
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
-  // Load env variables from .env file
-  // fix: Replace process.cwd() with path.resolve() to get the current working directory without Node.js type conflicts.
-  const env = loadEnv(mode, path.resolve(), '');
-
+export default defineConfig(() => {
   // Check if mkcert-generated certificate files exist in the project root.
   // fix: Remove __dirname as path.resolve() defaults to the CWD, which is the project root where vite.config.ts lives.
   const keyPath = path.resolve('./localhost-key.pem');
@@ -42,15 +38,15 @@ export default defineConfig(({ mode }) => {
       // Use the determined HTTPS configuration.
       https: httpsConfig,
       host: true,  // Expose to the network to allow access from mobile devices
+      // Local proxy for backend APIs (Gemini proxy, uploads, etc.) when demo-server runs on 8081.
+      proxy: {
+        '/api': 'http://localhost:8081',
+      },
     },
     build: {
       rollupOptions: {
         // Dependencies are now bundled by Vite, so the external option is no longer needed.
       }
-    },
-    define: {
-      // Expose the API key to the app as process.env.API_KEY, as expected by the geminiService.
-      'process.env.API_KEY': JSON.stringify(env.VITE_API_KEY)
     }
   };
 });

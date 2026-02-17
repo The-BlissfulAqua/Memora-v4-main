@@ -5,6 +5,47 @@
 export const isNative = typeof (window as any).Capacitor !== 'undefined' && (window as any).Capacitor.isNativePlatform && (window as any).Capacitor.isNativePlatform();
 
 type NotifyPermission = 'granted' | 'denied' | 'prompt' | 'default';
+type NotificationActionHandler = { remove: () => Promise<void> } | { remove: () => void } | null;
+
+let nativeActionListener: NotificationActionHandler = null;
+let nativeListenerInitialized = false;
+let nativeChannelInitialized = false;
+
+const ensureNativeActionListener = async (LocalNotifications: any) => {
+  if (nativeListenerInitialized || !LocalNotifications?.addListener) return;
+  nativeActionListener = await LocalNotifications.addListener('localNotificationActionPerformed', (event: any) => {
+    try {
+      const actionId = event.actionId;
+      const data = event.notification?.extra || event.notification?.data || {};
+      if ((window as any).__ON_NOTIFICATION_ACTION) {
+        (window as any).__ON_NOTIFICATION_ACTION({ actionId, data });
+      }
+    } catch (e) {
+      console.warn('Error handling local notification action', e);
+    }
+  });
+  nativeListenerInitialized = true;
+};
+
+const ensureNativeChannel = async (LocalNotifications: any) => {
+  if (nativeChannelInitialized || !LocalNotifications?.createChannel) return;
+  try {
+    await LocalNotifications.createChannel({
+      id: 'memora-reminders',
+      name: 'Memora Reminders',
+      description: 'Reminder notifications for Memora',
+      importance: 5,
+      visibility: 1,
+      sound: 'reminder_notification',
+      vibration: true,
+      lights: true,
+    } as any);
+  } catch (e) {
+    console.warn('Failed to create native notification channel', e);
+  } finally {
+    nativeChannelInitialized = true;
+  }
+};
 
 const requestPermission = async (): Promise<NotifyPermission> => {
   if (isNative) {
@@ -41,6 +82,8 @@ const schedule = async (opts: { id?: number; title: string; body?: string; sched
     try {
       const mod: any = await import('@capacitor/local-notifications');
       const LocalNotifications = mod.LocalNotifications || mod;
+      await ensureNativeActionListener(LocalNotifications);
+      await ensureNativeChannel(LocalNotifications);
       const scheduleAt = opts.scheduleAt || new Date();
       // Use action buttons when running natively so users can Complete/Snooze/Dismiss
       const notifications: any[] = [
@@ -54,6 +97,7 @@ const schedule = async (opts: { id?: number; title: string; body?: string; sched
           android: {
             // Persist notification for 10 seconds (10000 ms)
             timeoutAfter: 10000,
+            channelId: 'memora-reminders',
           },
         },
       ];
@@ -78,23 +122,7 @@ const schedule = async (opts: { id?: number; title: string; body?: string; sched
         console.warn('Failed to register native notification actions', e);
       }
 
-  await LocalNotifications.schedule({ notifications } as any);
-      // Listen for action events and forward them to a global handler if present
-      try {
-        LocalNotifications.addListener && LocalNotifications.addListener('localNotificationActionPerformed', (event: any) => {
-          try {
-            const actionId = event.actionId;
-            const data = event.notification?.extra || event.notification?.data || {};
-            if ((window as any).__ON_NOTIFICATION_ACTION) {
-              (window as any).__ON_NOTIFICATION_ACTION({ actionId, data });
-            }
-          } catch (e) {
-            console.warn('Error handling local notification action', e);
-          }
-        });
-      } catch (e) {
-        // ignore listener registration failures
-      }
+      await LocalNotifications.schedule({ notifications } as any);
       return true;
     } catch (e) {
       console.warn('LocalNotifications.schedule failed', e);
@@ -115,4 +143,18 @@ const schedule = async (opts: { id?: number; title: string; body?: string; sched
   return false;
 };
 
-export default { requestPermission, schedule };
+const teardown = async () => {
+  try {
+    if (nativeActionListener && typeof nativeActionListener.remove === 'function') {
+      await nativeActionListener.remove();
+    }
+  } catch (e) {
+    console.warn('Failed to tear down native notification listener', e);
+  } finally {
+    nativeActionListener = null;
+    nativeListenerInitialized = false;
+    nativeChannelInitialized = false;
+  }
+};
+
+export default { requestPermission, schedule, teardown };

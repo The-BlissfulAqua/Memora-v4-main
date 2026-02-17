@@ -9,6 +9,14 @@ cd demo-server
 npm install
 ```
 
+Set Gemini env vars (required for AI Companion/quote endpoints):
+
+```bash
+export GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+# optional:
+# export GEMINI_MODEL=gemini-2.5-flash
+```
+
 2. Start the server
 
 ```bash
@@ -19,7 +27,7 @@ npm start
 
 How to use in the app (presentation)
 
-- Run the web build (`pnpm run build`) and serve the `dist/` folder from any static host (or use Vite dev server).
+- Run the web build (`npm run build`) and serve the `dist/` folder from any static host (or use Vite dev server).
 - Open the built app on each device (or dev server). Before loading the app, set the global `__DEMO_REALTIME_URL` to the server WebSocket address, e.g.:
 
 ```html

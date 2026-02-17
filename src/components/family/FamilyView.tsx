@@ -13,6 +13,9 @@ import VoiceMessagePlayer from '../shared/VoiceMessagePlayer';
 import VoiceRecorder from '../shared/VoiceRecorder';
 import MusicIcon from '../icons/MusicIcon';
 import UploadProgress from '../shared/UploadProgress';
+import toastService from '../../services/toastService';
+
+const isDev = import.meta.env.DEV;
 
 const ReminderIcon: React.FC<{ icon: 'medication' | 'meal' | 'hydration' | 'music'; className?: string }> = ({ icon, className }) => {
   switch (icon) {
@@ -59,13 +62,13 @@ const FamilyView: React.FC = () => {
   const handleAddMemory = (e: React.FormEvent) => {
     e.preventDefault();
     // Prevent submitting until we have a verified public image URL, and require caption/name
-    if (!caption || !sharedBy) { alert('Please fill out your name and a caption before sharing.'); return; }
+    if (!caption || !sharedBy) { toastService.show('Please fill out your name and a caption before sharing.', 'warning'); return; }
     if (!lastUploadName || lastUploadVerified !== true) {
       console.warn('[FamilyView] Attempted to submit before upload verification', { lastUploadName, lastUploadVerified, imageUrl });
-      alert('Image upload is not yet verified. Please wait until verification completes (green badge) before sharing.');
+      toastService.show('Image upload is not yet verified. Please wait until verification completes.', 'warning');
       return;
     }
-    if (!imageUrl) { alert('No image available to share. Please upload an image first.'); return; }
+    if (!imageUrl) { toastService.show('No image available to share. Please upload an image first.', 'warning'); return; }
     const newMemory: Memory = { id: new Date().toISOString(), imageUrl, caption, sharedBy };
     dispatch({ type: 'ADD_MEMORY', payload: newMemory });
     // Clear caption and reset upload UI so the form is ready for a second upload
@@ -90,20 +93,20 @@ const FamilyView: React.FC = () => {
   };
 
   const handleSendAIQuote = async () => {
-    if (!isGeminiConfigured) { alert(missingApiKeyError); return; }
+    if (!isGeminiConfigured) { toastService.show(missingApiKeyError, 'error', 5000); return; }
     setIsSendingQuote(true);
     try {
       const quoteText = await getAIComfortingQuote();
-      if (quoteText === missingApiKeyError) { alert(quoteText); return; }
+      if (quoteText === missingApiKeyError) { toastService.show(quoteText, 'error', 5000); return; }
       const newQuote: SharedQuote = { id: new Date().toISOString(), text: quoteText, timestamp: new Date().toLocaleString() };
       dispatch({ type: 'ADD_QUOTE', payload: newQuote });
-    } catch (e) { console.error(e); alert('Could not send a thought at this time.'); }
+    } catch (e) { console.error(e); toastService.show('Could not send a thought at this time.', 'error'); }
     finally { setIsSendingQuote(false); }
   };
 
   const handleSendCustomQuote = () => {
     if (!customThought.trim()) return; const newQuote: SharedQuote = { id: new Date().toISOString(), text: customThought.trim(), timestamp: new Date().toLocaleString() };
-    dispatch({ type: 'ADD_QUOTE', payload: newQuote }); setCustomThought(''); alert('Your thought has been sent!');
+    dispatch({ type: 'ADD_QUOTE', payload: newQuote }); setCustomThought(''); toastService.show('Your thought has been sent!', 'success');
   };
 
   const handleNewVoiceMessage = (audioUrl: string, duration: number) => {
@@ -158,7 +161,7 @@ const FamilyView: React.FC = () => {
             {/* Removed client-side resizing: always upload the original file */}
             <input id="family-image-input" type="file" accept="image/*" className="hidden" onChange={async (e) => {
               const f = e.target.files && e.target.files[0]; if (!f) return;
-              console.debug('[FamilyView] file selected (original-only upload)', { name: f.name, size: f.size, type: f.type });
+              if (isDev) console.debug('[FamilyView] file selected (original-only upload)', { name: f.name, size: f.size, type: f.type });
               const demoUrl = (window as any).__DEMO_REALTIME_URL as string | undefined;
               if (demoUrl) {
                 try {
@@ -168,14 +171,14 @@ const FamilyView: React.FC = () => {
                   await new Promise<void>((resolve) => {
                     const xhr = new XMLHttpRequest(); xhrRef.current = xhr; xhr.open('POST', uploadEndpoint, true);
                     try { xhr.setRequestHeader('ngrok-skip-browser-warning', '1'); } catch (e) { /* ignore if restricted */ }
-                    console.debug('[FamilyView] XHR open ->', uploadEndpoint);
+                    if (isDev) console.debug('[FamilyView] XHR open ->', uploadEndpoint);
                     xhr.onload = () => {
-                        console.debug('[FamilyView] XHR onload', xhr.status, xhr.responseText);
+                        if (isDev) console.debug('[FamilyView] XHR onload', xhr.status, xhr.responseText);
                         xhrRef.current = null;
                         if (xhr.status >= 200 && xhr.status < 300) {
                           try {
                             const body = JSON.parse(xhr.responseText || '{}');
-                            console.debug('[FamilyView] upload success (server responded)', body);
+                            if (isDev) console.debug('[FamilyView] upload success (server responded)', body);
                             const remoteUrl = body.url || '';
                             if (!remoteUrl) {
                               console.warn('[FamilyView] upload response missing url', body);
@@ -187,7 +190,7 @@ const FamilyView: React.FC = () => {
                             setLastUploadVerified(typeof body.verified === 'boolean' ? body.verified : null);
                             // If server already verified the upload, accept it immediately and skip client verification.
                             if (body.verified === true) {
-                              console.debug('[FamilyView] server reported verified=true, accepting remote URL', remoteUrl);
+                              if (isDev) console.debug('[FamilyView] server reported verified=true, accepting remote URL', remoteUrl);
                               setLastUploadVerified(true);
                               setImageUrl(remoteUrl);
                               setUploadToast('Upload complete'); setTimeout(() => setUploadToast(null), 2500);
@@ -205,7 +208,7 @@ const FamilyView: React.FC = () => {
                               }, 5000);
                               verifier.onload = () => {
                                 verified = true; clearTimeout(verifyTimeout);
-                                console.debug('[FamilyView] remote image verified', remoteUrl);
+                                if (isDev) console.debug('[FamilyView] remote image verified', remoteUrl);
                                 setLastUploadVerified(true);
                                 setImageUrl(remoteUrl);
                                 setUploadToast('Upload complete'); setTimeout(() => setUploadToast(null), 2500);
@@ -228,16 +231,16 @@ const FamilyView: React.FC = () => {
                         else { console.warn('[FamilyView] upload failed status', xhr.status, xhr.responseText); setImageUrl(''); setUploadToast('Upload failed'); setTimeout(() => setUploadToast(null), 2500); resolve(); }
                       };
                     xhr.onerror = () => { console.error('[FamilyView] XHR error'); xhrRef.current = null; setImageUrl(''); setUploadToast('Upload error'); setTimeout(() => setUploadToast(null), 2500); resolve(); };
-                    xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) { const p = Math.round((ev.loaded / ev.total) * 100); setUploadProgress(p); console.debug('[FamilyView] upload progress', p); } };
+                    xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) { const p = Math.round((ev.loaded / ev.total) * 100); setUploadProgress(p); if (isDev) console.debug('[FamilyView] upload progress', p); } };
                     xhr.onloadend = () => { setUploadProgress(null); xhrRef.current = null; };
                     xhr.send(form);
                   });
-                  try { e.currentTarget.value = ''; } catch (err) { console.debug('[FamilyView] input clear ignored', err); }
+                  try { e.currentTarget.value = ''; } catch (err) { if (isDev) console.debug('[FamilyView] input clear ignored', err); }
                   return;
                 } catch (uErr) { console.warn('[FamilyView] upload original failed, falling back to local preview', uErr); }
               }
               // fallback to local object URL preview if demo URL not configured or upload failed
-              setImageUrl(URL.createObjectURL(f)); try { e.currentTarget.value = ''; } catch (err) { console.debug('[FamilyView] input clear ignored', err); }
+              setImageUrl(URL.createObjectURL(f)); try { e.currentTarget.value = ''; } catch (err) { if (isDev) console.debug('[FamilyView] input clear ignored', err); }
             }} />
           </div>
 
@@ -273,7 +276,7 @@ const FamilyView: React.FC = () => {
             {isSendingQuote ? 'Generating...' : <> <MusicIcon className="w-5 h-5"/> Generate & Send Thought </>}
           </button>
           <div className="flex items-center gap-2 border-t border-slate-700/50 pt-3">
-            <input type="text" placeholder="Or write a personal message..." value={customThought} onChange={(e) => setCustomThought(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSendCustomQuote()} className="flex-grow px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 text-sm" />
+            <input type="text" placeholder="Or write a personal message..." value={customThought} onChange={(e) => setCustomThought(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendCustomQuote()} className="flex-grow px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 text-sm" />
             <button onClick={handleSendCustomQuote} disabled={!customThought.trim()} className="flex-shrink-0 px-4 py-2 bg-slate-600 text-white font-semibold rounded-lg shadow-md hover:bg-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed">Send</button>
           </div>
         </div>

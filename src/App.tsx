@@ -10,6 +10,8 @@ import LoginPage from './components/shared/LoginPage';
 import DashboardSelectorModal from './components/shared/DashboardSelectorModal';
 import AcknowledgeModal from './components/shared/AcknowledgeModal';
 import ReminderBanner from './components/shared/ReminderBanner';
+import ToastViewport from './components/shared/ToastViewport';
+import { getNextReminderTrigger, isReminderDue } from './utils/reminders';
 // ReminderBanner removed per user's request: do not show upcoming reminders
 
 const App: React.FC = () => {
@@ -71,7 +73,6 @@ const App: React.FC = () => {
   const viewRole = state.currentView === 'CAREGIVER' ? 'CAREGIVER' : state.currentView === 'FAMILY' ? 'FAMILY' : 'PATIENT';
   const effectiveRole = viewRole; // view is authoritative
   const canHear = effectiveRole === 'CAREGIVER' || effectiveRole === 'FAMILY';
-  console.debug('[App] alert-effect', { effectiveRole, viewRole, loggedRole, canHear, devMode: state.devMode, unackCount: unack.length, alerts: unack.map(a => ({ id: a.id, type: a.type })) });
 
     if (!canHear) {
       soundService.stopSosAlert();
@@ -168,7 +169,10 @@ const App: React.FC = () => {
         console.warn('Error handling notification action in app', e);
       }
     };
-    return () => { (window as any).__ON_NOTIFICATION_ACTION = undefined; };
+    return () => {
+      (window as any).__ON_NOTIFICATION_ACTION = undefined;
+      localNotifications.teardown().catch(() => { /* ignore */ });
+    };
   }, [dispatch]);
 
 
@@ -180,18 +184,11 @@ const App: React.FC = () => {
     const scheduleForReminder = (reminder: any) => {
       if (reminder.completed || reminder.notified) return;
       try {
-        const [hoursStr, minutesStr] = reminder.time.split(':');
-        const now = new Date();
-        const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hoursStr, 10), parseInt(minutesStr, 10), 0, 0);
-        // If target is in the past for today, schedule for tomorrow
-        if (target.getTime() <= Date.now()) {
-          target.setDate(target.getDate() + 1);
-        }
+        const target = getNextReminderTrigger(reminder.time);
+        if (!target) return;
         const ms = target.getTime() - Date.now();
-        console.debug('[App] scheduling reminder', { id: reminder.id, title: reminder.title, inMs: ms });
         const tid = window.setTimeout(async () => {
           try {
-            console.log(`Reminder due (timer): ${reminder.title}`);
             // Mark notified in app state first to prevent re-scheduling
             dispatch({ type: 'MARK_REMINDER_NOTIFIED', payload: reminder.id });
 
@@ -206,7 +203,6 @@ const App: React.FC = () => {
                   // Ensure we have permission to show a web notification. Request if necessary.
                   try {
                     const perm = await localNotifications.requestPermission();
-                    console.debug('[App] notification permission result', perm);
                     if (perm !== 'granted') {
                       console.warn('[App] notification permission not granted, skipping visible notification');
                     } else {
@@ -291,6 +287,23 @@ const App: React.FC = () => {
     return () => { (window as any).openLoginModal = undefined; };
   }, []);
 
+  useEffect(() => {
+    const role = state.currentUser?.role?.toUpperCase?.();
+    const canSeeAck = role === 'CAREGIVER' || role === 'FAMILY';
+    if (!canSeeAck) {
+      setShowAckForAlertId(null);
+      return;
+    }
+
+    const current = showAckForAlertId
+      ? state.alerts.find((a) => a.id === showAckForAlertId && (a.type === 'SOS' || a.type === 'FALL') && a.requiresAcknowledgement)
+      : null;
+    if (current) return;
+
+    const nextCritical = state.alerts.find((a) => (a.type === 'SOS' || a.type === 'FALL') && a.requiresAcknowledgement);
+    setShowAckForAlertId(nextCritical ? nextCritical.id : null);
+  }, [state.alerts, state.currentUser, showAckForAlertId]);
+
   return (
     // The main background is now on the body tag in index.html
     <div className="min-h-screen font-sans antialiased text-gray-300"> 
@@ -308,20 +321,6 @@ const App: React.FC = () => {
         )}
       </div>
       {showLogin && <LoginPage onClose={() => setShowLogin(false)} />}
-
-      {/* Show acknowledge modal for the first critical alert that requires acknowledgment */}
-      {state.alerts.length > 0 && !showAckForAlertId && (() => {
-  const role = state.currentUser?.role?.toUpperCase?.();
-  // Acknowledge modal should only be visible to caregivers or family members.
-  // Dev mode will NOT make the patient see the modal.
-  const canSeeAck = role === 'CAREGIVER' || role === 'FAMILY';
-        if (!canSeeAck) return null;
-        const critical = state.alerts.find(a => (a.type === 'SOS' || a.type === 'FALL') && a.requiresAcknowledgement);
-        if (critical) {
-          setShowAckForAlertId(critical.id);
-        }
-        return null;
-      })()}
 
       {showAckForAlertId && (() => {
         // Only show the acknowledge modal to caregiver or family dashboard views.
@@ -345,13 +344,7 @@ const App: React.FC = () => {
       )}
       {/* Show in-app persistent banner on Patient view when a reminder is due */}
       {viewMode === ViewMode.PATIENT && (() => {
-        const due = state.reminders.find((r: any) => !r.completed && !r.notified && (() => {
-          const now = new Date();
-          const [h, m] = r.time.split(':');
-          const reminderDate = new Date(now);
-          reminderDate.setHours(Number(h), Number(m), 0, 0);
-          return now >= reminderDate;
-        })());
+        const due = state.reminders.find((r: any) => !r.completed && !r.notified && isReminderDue(r.time));
         if (due) {
           return <ReminderBanner reminder={due} status="due" />;
         }
@@ -361,6 +354,7 @@ const App: React.FC = () => {
       <div className="container mx-auto max-w-lg p-2 sm:p-4">
         {renderView()}
       </div>
+      <ToastViewport />
     </div>
   );
 };

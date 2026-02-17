@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 
+const isDev = import.meta.env.DEV;
+
 const RemoteImage: React.FC<{ src: string; alt?: string; className?: string }> = ({ src, alt, className }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -23,7 +25,7 @@ const RemoteImage: React.FC<{ src: string; alt?: string; className?: string }> =
     const key = `${effectiveSrc}-${attempt}`;
 
     const tryFetchBlob = async (url: string) => {
-        console.debug('[RemoteImage] trying fetch blob fallback for', url);
+        if (isDev) console.debug('[RemoteImage] trying fetch blob fallback for', url);
         try {
             const headers: any = { 'ngrok-skip-browser-warning': '1' };
             const resp = await fetch(url, { headers });
@@ -31,23 +33,23 @@ const RemoteImage: React.FC<{ src: string; alt?: string; className?: string }> =
             const b = await resp.blob();
             // Diagnostic: log blob details and check magic bytes
             try {
-                console.debug('[RemoteImage] fetched blob', { size: b.size, type: b.type });
+                if (isDev) console.debug('[RemoteImage] fetched blob', { size: b.size, type: b.type });
                 const slice = await b.slice(0, 16).arrayBuffer();
                 const bytes = new Uint8Array(slice);
                 const hex = Array.from(bytes).map(x => x.toString(16).padStart(2, '0')).join(' ');
-                console.debug('[RemoteImage] blob head bytes', hex);
+                if (isDev) console.debug('[RemoteImage] blob head bytes', hex);
                 // Basic signature checks
                 const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
                 const isJpg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[bytes.length-2] === 0xff;
                 if (!isPng && !isJpg) {
                     console.warn('[RemoteImage] fetched blob does not look like PNG/JPEG — it may be an HTML error page or different content type');
                 }
-            } catch (diagErr) { console.debug('[RemoteImage] blob diagnostics failed', diagErr); }
+            } catch (diagErr) { if (isDev) console.debug('[RemoteImage] blob diagnostics failed', diagErr); }
             const o = URL.createObjectURL(b);
             setBlobUrl(o);
             setError(null);
             setLoading(false);
-            console.debug('[RemoteImage] fetch blob fallback succeeded', url);
+            if (isDev) console.debug('[RemoteImage] fetch blob fallback succeeded', url);
             return true;
         } catch (err) {
             console.warn('[RemoteImage] fetch blob fallback failed', url, err);
@@ -62,7 +64,7 @@ const RemoteImage: React.FC<{ src: string; alt?: string; className?: string }> =
                 <div className="w-full h-full flex flex-col items-center justify-center bg-slate-700 text-slate-400 p-2">
                     <div className="text-sm mb-2">Image failed to load</div>
                     <div className="flex gap-2">
-                        <button className="px-3 py-1 bg-slate-600 rounded" onClick={async () => { setError(null); setLoading(true); setAttempt(a => a + 1); console.debug('[RemoteImage] retry', src); const ok = await tryFetchBlob(src); if (!ok) setError('failed'); }}>Retry</button>
+                        <button className="px-3 py-1 bg-slate-600 rounded" onClick={async () => { setError(null); setLoading(true); setAttempt(a => a + 1); if (isDev) console.debug('[RemoteImage] retry', src); const ok = await tryFetchBlob(src); if (!ok) setError('failed'); }}>Retry</button>
                         <button className="px-3 py-1 bg-slate-600 rounded" onClick={() => setShowUrl(s => !s)}>{showUrl ? 'Hide URL' : 'Show URL'}</button>
                     </div>
                     {showUrl && <div className="mt-2 text-xs break-all">{src}</div>}
@@ -74,7 +76,7 @@ const RemoteImage: React.FC<{ src: string; alt?: string; className?: string }> =
                     src={effectiveSrc}
                     alt={alt}
                     className="w-full h-full object-cover"
-                    onLoad={() => { console.debug('[RemoteImage] loaded', effectiveSrc); setLoading(false); setError(null); }}
+                    onLoad={() => { if (isDev) console.debug('[RemoteImage] loaded', effectiveSrc); setLoading(false); setError(null); }}
                     onError={async (e) => {
                         console.error('[RemoteImage] load error', effectiveSrc, e);
                         setLoading(false);
@@ -126,7 +128,7 @@ const MemoryAlbumView: React.FC<MemoryAlbumViewProps> = ({ onBack }) => {
             ) : (
                 <div className="space-y-6 overflow-y-auto pr-2 flex-grow">
                     {memories.map(memory => {
-                        console.debug('[MemoryAlbumView] rendering memory', { id: memory.id, imageUrl: memory.imageUrl });
+                        if (isDev) console.debug('[MemoryAlbumView] rendering memory', { id: memory.id, imageUrl: memory.imageUrl });
                         return (
                         <div key={memory.id} className="bg-slate-800/50 rounded-xl overflow-hidden shadow-lg border border-slate-700/50">
                             <RemoteImage src={memory.imageUrl} alt={memory.caption} className="w-full h-60" />

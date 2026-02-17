@@ -87,7 +87,9 @@ const ARNavigation: React.FC<ARNavigationProps> = ({ onBack }) => {
             // and our current step count is lower than the checkpoint's value.
             setSteps(currentSteps => {
                 if(currentSteps < checkpoint.step_checkpoint) {
-                    console.log(`Drift corrected by ${checkpoint.name}. Steps updated to ${checkpoint.step_checkpoint}`);
+                    if (import.meta.env.DEV) {
+                      console.debug(`Drift corrected by ${checkpoint.name}. Steps updated to ${checkpoint.step_checkpoint}`);
+                    }
                     return checkpoint.step_checkpoint;
                 }
                 return currentSteps;

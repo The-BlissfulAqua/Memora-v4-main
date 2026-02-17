@@ -38,7 +38,6 @@ const AcknowledgeModal: React.FC<{ alertId: string; alertType: 'SOS' | 'FALL'; o
             if (audioRef.current) {
               audioRef.current.load();
               await audioRef.current.play();
-              console.debug(`[AcknowledgeModal] ${alertType} alert playing successfully`);
             }
           }
         } catch (e) {

@@ -36,7 +36,7 @@ const ensureNativeChannel = async (LocalNotifications: any) => {
       description: 'Reminder notifications for Memora',
       importance: 5,
       visibility: 1,
-      sound: 'reminder_notification',
+      sound: 'remindernotification',
       vibration: true,
       lights: true,
     } as any);
@@ -50,18 +50,34 @@ const ensureNativeChannel = async (LocalNotifications: any) => {
 const requestPermission = async (): Promise<NotifyPermission> => {
   if (isNative) {
     try {
-      // dynamic import to avoid bundler issues
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const mod: any = await import('@capacitor/local-notifications');
-  const LocalNotifications = mod.LocalNotifications || mod;
-      // Some native platforms require a runtime request
+      const mod: any = await import('@capacitor/local-notifications');
+      const LocalNotifications = mod.LocalNotifications || mod;
+      if (LocalNotifications && typeof LocalNotifications.requestPermissions === 'function') {
+        const result = await LocalNotifications.requestPermissions();
+        const permission = result?.display || result?.notification || result;
+        if (typeof permission === 'string') {
+          return permission as NotifyPermission;
+        }
+        if (typeof permission === 'object' && 'display' in permission) {
+          return (permission.display || 'denied') as NotifyPermission;
+        }
+        if (result && typeof result === 'object' && 'display' in result) {
+          return (result.display || 'denied') as NotifyPermission;
+        }
+      }
       if (LocalNotifications && typeof LocalNotifications.requestPermission === 'function') {
         const granted = await LocalNotifications.requestPermission();
-        // Plugin may return { value: true } or boolean
         if (typeof granted === 'object' && 'value' in granted) {
           return granted.value ? 'granted' : 'denied';
         }
         return granted ? 'granted' : 'denied';
+      }
+      if (LocalNotifications && typeof LocalNotifications.checkPermissions === 'function') {
+        const result = await LocalNotifications.checkPermissions();
+        const permission = result?.display || result?.notification || result;
+        if (typeof permission === 'string') {
+          return permission as NotifyPermission;
+        }
       }
     } catch (e) {
       console.warn('Capacitor LocalNotifications requestPermission failed', e);
@@ -84,27 +100,34 @@ const schedule = async (opts: { id?: number; title: string; body?: string; sched
       const LocalNotifications = mod.LocalNotifications || mod;
       await ensureNativeActionListener(LocalNotifications);
       await ensureNativeChannel(LocalNotifications);
-      const scheduleAt = opts.scheduleAt || new Date();
-      // Use action buttons when running natively so users can Complete/Snooze/Dismiss
-      const notifications: any[] = [
-        {
-          id: opts.id || Date.now(),
-          title: opts.title,
-          body: opts.body || '',
-          schedule: { at: scheduleAt },
-          // Use extra data to carry reminder info so action handler can map actions
-          extra: opts.extra || { reminderId: opts.id || Date.now() },
-          android: {
-            // Persist notification for 10 seconds (10000 ms)
-            timeoutAfter: 10000,
-            channelId: 'memora-reminders',
-          },
-        },
-      ];
 
-      // Try registering actions (Android supports actions; iOS support may differ)
+      const rawId = opts.id || Date.now();
+      const notificationId = rawId % 2147483647;
+      const notificationObj: any = {
+        id: notificationId,
+        title: opts.title,
+        body: opts.body || '',
+        extra: opts.extra || { reminderId: notificationId },
+        android: {
+          channelId: 'memora-reminders',
+          ongoing: true,
+          autoCancel: false,
+          timeoutAfter: 5000,
+          importance: 5,
+          visibility: 1,
+          priority: 2,
+          showWhen: true,
+        },
+      };
+
+      if (opts.scheduleAt) {
+        notificationObj.schedule = { at: opts.scheduleAt };
+      }
+
+      const notifications: any[] = [notificationObj];
+
       try {
-  await LocalNotifications.registerActionTypes({
+        await LocalNotifications.registerActionTypes({
           types: [
             {
               id: 'REMINDER_ACTIONS',
@@ -116,24 +139,24 @@ const schedule = async (opts: { id?: number; title: string; body?: string; sched
             },
           ],
         } as any);
-        // Attach the action type id to our notification
         notifications[0].actionTypeId = 'REMINDER_ACTIONS';
       } catch (e) {
         console.warn('Failed to register native notification actions', e);
       }
 
+      console.log('[localNotifications] Scheduling native notification:', JSON.stringify(notifications[0]));
       await LocalNotifications.schedule({ notifications } as any);
+      console.log('[localNotifications] Native notification scheduled successfully');
       return true;
     } catch (e) {
-      console.warn('LocalNotifications.schedule failed', e);
+      console.error('[localNotifications] Native schedule failed:', e);
     }
   }
 
   // Web fallback: immediate notification if permission granted
   try {
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      const n: any = new Notification(opts.title, { body: opts.body });
-      // Return the notification instance so callers can manage it (close it when audio ends)
+      const n: any = new Notification(opts.title, { body: opts.body, requireInteraction: true });
       return n;
     }
   } catch (e) {
@@ -157,4 +180,4 @@ const teardown = async () => {
   }
 };
 
-export default { requestPermission, schedule, teardown };
+export default { requestPermission, schedule, teardown, isNative };

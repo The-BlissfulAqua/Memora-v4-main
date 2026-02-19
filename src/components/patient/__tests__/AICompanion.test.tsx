@@ -2,10 +2,26 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import AICompanion from '../AICompanion';
 import { getAICompanionChatResponse } from '../../../services/geminiService';
 
+const nativeSpeechMock = vi.hoisted(() => ({
+  isNativePlatform: vi.fn(() => false),
+  isPluginDeclared: vi.fn(() => false),
+  isAvailable: vi.fn(async () => false),
+  getAvailability: vi.fn(async () => ({ available: false, reasonCode: 'not_native', permission: 'unknown' })),
+  getPermissionState: vi.fn(async () => 'unknown'),
+  ensurePermission: vi.fn(async () => ({ granted: false, state: 'unknown' })),
+  startListening: vi.fn(async () => {}),
+  stopListening: vi.fn(async () => ''),
+  addTranscriptListener: vi.fn(async () => async () => {}),
+}));
+
 vi.mock('../../../services/geminiService', () => ({
   isGeminiConfigured: true,
   missingApiKeyError: 'missing',
   getAICompanionChatResponse: vi.fn(async (prompt: string) => `AI: ${prompt}`),
+}));
+
+vi.mock('../../../services/nativeSpeechService', () => ({
+  default: nativeSpeechMock,
 }));
 
 class MockSpeechRecognition {
@@ -50,6 +66,30 @@ describe('AICompanion', () => {
     (window as any).SpeechRecognition = MockSpeechRecognition;
     (window as any).webkitSpeechRecognition = undefined;
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
+
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: vi.fn(async () => ({
+          getTracks: () => [{ stop: vi.fn() }],
+        })),
+      },
+    });
+
+    Object.defineProperty(navigator, 'permissions', {
+      configurable: true,
+      value: {
+        query: vi.fn(async () => ({ state: 'prompt' })),
+      },
+    });
+
+    nativeSpeechMock.isNativePlatform.mockReturnValue(false);
+    nativeSpeechMock.isPluginDeclared.mockReturnValue(false);
+    nativeSpeechMock.getAvailability.mockResolvedValue({
+      available: false,
+      reasonCode: 'not_native',
+      permission: 'unknown',
+    });
   });
 
   it('sends typed message on Enter', async () => {
@@ -70,6 +110,9 @@ describe('AICompanion', () => {
     render(<AICompanion onBack={() => {}} />);
 
     const micButton = await screen.findByLabelText('Start listening');
+    await waitFor(() => {
+      expect(micButton).not.toBeDisabled();
+    });
     fireEvent.click(micButton);
 
     const recognition = MockSpeechRecognition.lastInstance;
@@ -86,5 +129,31 @@ describe('AICompanion', () => {
     });
 
     expect(await screen.findByText('AI: how are you')).toBeInTheDocument();
+  });
+
+  it('shows unavailable mode when speech recognition is not supported', async () => {
+    (window as any).SpeechRecognition = undefined;
+    (window as any).webkitSpeechRecognition = undefined;
+
+    render(<AICompanion onBack={() => {}} />);
+
+    expect(await screen.findByText('Voice mode: Unavailable (text only)')).toBeInTheDocument();
+    expect(await screen.findByText(/Voice status: text-only \(speech_api_unavailable\)/)).toBeInTheDocument();
+  });
+
+  it('shows explicit native diagnostics when Android recognizer is unavailable', async () => {
+    nativeSpeechMock.isNativePlatform.mockReturnValue(true);
+    nativeSpeechMock.isPluginDeclared.mockReturnValue(true);
+    nativeSpeechMock.getAvailability.mockResolvedValue({
+      available: false,
+      reasonCode: 'recognizer_unavailable',
+      permission: 'unknown',
+    });
+
+    render(<AICompanion onBack={() => {}} />);
+
+    expect(await screen.findByText('Voice mode: Unavailable (text only)')).toBeInTheDocument();
+    expect(await screen.findByText(/Voice status: text-only \(recognizer_unavailable\)/)).toBeInTheDocument();
+    expect((await screen.findAllByText(/Android speech recognizer service is unavailable on this device/)).length).toBeGreaterThan(0);
   });
 });

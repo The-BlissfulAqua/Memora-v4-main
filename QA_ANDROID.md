@@ -6,13 +6,21 @@ Use this checklist before shipping Android builds.
 
 1. Build web assets:
 ```bash
-npm run build
+npm run build:android
 ```
-2. Sync Capacitor Android project:
+2. Install native speech plugin for AI Companion voice on Android (first time only):
+```bash
+npm install @capacitor-community/speech-recognition
+```
+3. Sync Capacitor Android project after dependency changes:
 ```bash
 npx cap sync android
 ```
-3. Set server env for AI endpoints:
+4. Verify native voice wiring:
+```bash
+npm run verify:voice
+```
+5. Set server env for AI endpoints:
 - `GEMINI_API_KEY` on backend (demo server or Vercel)
 
 ## Core Functional Scenarios
@@ -24,8 +32,13 @@ npx cap sync android
 
 2. AI Companion voice input
 - Open Patient -> AI Companion.
+- Confirm diagnostics show: `native platform yes`, `native plugin yes`.
+- If voice is unavailable, confirm diagnostics reason is explicit (for example: `plugin_sync_missing`, `recognizer_unavailable`, `bridge_unimplemented`) and action text is shown.
+- Tap `Copy diagnostics` and confirm JSON includes `nativeAvailabilityReason`.
+- Tap `Run voice self-test` and verify a pass/fail message appears within ~6s.
 - Tap microphone, speak, stop.
-- Verify transcript appears once and only one AI reply is generated.
+- Verify transcript appears and only one AI reply is generated.
+- Deny microphone permission once, verify clear permission error text appears.
 
 3. Voice Recorder permissions
 - Deny mic permission, retry record.

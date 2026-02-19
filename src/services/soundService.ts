@@ -1,6 +1,5 @@
 // A simple service to manage audio playback for alerts.
 
-// Import audio assets so the bundler (Vite) includes them in the app package.
 import sosAsset from '../assets/audio/sos_alert.mp3';
 import fallAsset from '../assets/audio/fall_alert.mp3';
 import reminderAsset from '../assets/audio/reminder_notification.mp3';
@@ -19,7 +18,6 @@ function ensureAudioElement(kind: 'sos' | 'fall' | 'reminder'): HTMLAudioElement
     sosAudio = new Audio(sosAsset);
     sosAudio.loop = true;
     sosAudio.preload = 'auto';
-    // playsInline to avoid Safari going fullscreen on iOS
     (sosAudio as any).playsInline = true;
     try { sosAudio.load(); } catch (e) { /* ignore */ }
     sosAudio.addEventListener('error', (ev) => console.error('[soundService] sosAudio error', ev));
@@ -45,28 +43,43 @@ function ensureAudioElement(kind: 'sos' | 'fall' | 'reminder'): HTMLAudioElement
   return reminderAudio;
 }
 
+const unlockAudioElement = async (audio: HTMLAudioElement): Promise<boolean> => {
+  if (isUnlocked) return true;
+  
+  audio.muted = true;
+  const promise = audio.play();
+  if (promise) {
+    try {
+      await promise;
+      audio.pause();
+      audio.currentTime = 0;
+      audio.muted = false;
+      isUnlocked = true;
+      return true;
+    } catch (err) {
+      console.error('Audio unlock failed. Subsequent sounds may not play until another interaction.', err);
+      return false;
+    }
+  }
+  return false;
+};
+
 const soundService = {
-  /**
-   * Unlocks the browser's audio context by playing a muted sound.
-   * This MUST be called from within a user-initiated event handler (e.g., a click).
-   */
-  // Return a Promise so callers can wait for the unlock attempt to finish and then retry play.
+  isUnlocked: () => isUnlocked,
+  
   unlock: async (): Promise<void> => {
     if (isUnlocked) return;
     try {
-      const audio = ensureAudioElement('sos');
-      audio.muted = true;
-      const promise = audio.play();
-      if (promise) {
-        try {
-          await promise;
-          audio.pause();
-          audio.currentTime = 0;
-          audio.muted = false;
-          isUnlocked = true;
-        } catch (err) {
-          console.error('Audio unlock failed. Subsequent sounds may not play until another interaction.', err);
-          // Leave isUnlocked false; caller may attempt again later on user interaction.
+      const allAudio = [
+        ensureAudioElement('sos'),
+        ensureAudioElement('fall'),
+        ensureAudioElement('reminder'),
+      ];
+      
+      for (const audio of allAudio) {
+        const success = await unlockAudioElement(audio);
+        if (success) {
+          break;
         }
       }
     } catch (err) {
@@ -79,18 +92,15 @@ const soundService = {
       const audio = ensureAudioElement('sos');
       audio.muted = false;
       audio.volume = 1.0;
-      // Ensure we start from the beginning for loudness
       audio.currentTime = 0;
       const doPlay = () => {
         if (audio.paused) audio.play().then(() => { _isSosPlaying = true; }).catch(e => console.error('Error playing SOS sound:', e));
       };
 
       if (!isUnlocked) {
-        // Try to unlock, then attempt to play. If unlock fails, still attempt to play (may fail).
         (soundService as any).unlock().then(() => {
           doPlay();
         }).catch(() => {
-          // Unlock failed; still try to play once (will likely fail on browsers blocking autoplay).
           doPlay();
         });
       } else {
@@ -153,7 +163,6 @@ const soundService = {
     }
   },
 
-  // Diagnostics
   isSosPlaying: () => !!_isSosPlaying,
   isFallPlaying: () => !!_isFallPlaying,
 
@@ -171,12 +180,10 @@ const soundService = {
       };
 
       if (!isUnlocked) {
-        // Attempt to unlock first (muted) then play
         (soundService as any).unlock().then(() => {
           try { audio.load(); } catch (e) { /* ignore */ }
           doPlay();
         }).catch(() => {
-          // Unlock failed; still try to play once
           try { audio.load(); } catch (e) { /* ignore */ }
           doPlay();
         });
@@ -187,7 +194,6 @@ const soundService = {
     } catch (e) {
       console.error('Error ensuring Reminder audio element:', e);
     }
-    // Return the audio element so callers can observe 'ended' or close notifications when audio finishes
     return reminderAudio;
   }
   ,

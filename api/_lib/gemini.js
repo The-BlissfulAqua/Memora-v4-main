@@ -1,5 +1,11 @@
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
+const extractGeminiText = (body) =>
+  body?.candidates?.[0]?.content?.parts
+    ?.map((part) => (typeof part?.text === 'string' ? part.text : ''))
+    .join('')
+    .trim() || '';
+
 async function generateGeminiText({ prompt, systemInstruction }) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -27,11 +33,7 @@ async function generateGeminiText({ prompt, systemInstruction }) {
     throw err;
   }
 
-  const text =
-    body?.candidates?.[0]?.content?.parts
-      ?.map((part) => (typeof part?.text === 'string' ? part.text : ''))
-      .join('')
-      .trim() || '';
+  const text = extractGeminiText(body);
 
   if (!text) {
     const err = new Error('Gemini returned empty content');

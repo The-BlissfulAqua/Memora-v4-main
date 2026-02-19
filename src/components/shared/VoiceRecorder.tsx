@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import MicrophoneIcon from '../icons/MicrophoneIcon';
 import toastService from '../../services/toastService';
+import nativeAudioRecorder from '../../services/nativeAudioRecorder';
 
 interface VoiceRecorderProps {
   onNewMessage: (audioUrl: string, duration: number) => void;
@@ -10,88 +11,125 @@ interface VoiceRecorderProps {
 const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onNewMessage, disabled = false }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [isNativeMode, setIsNativeMode] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [micPermission, setMicPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
-  const [supportedMimeType, setSupportedMimeType] = useState<string>('');
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
-    // Check for MediaRecorder support and find a supported MIME type
-    if (typeof MediaRecorder !== 'undefined') {
-        const mimeTypes = [
-            'audio/webm;codecs=opus',
-            'audio/mp4',
-            'audio/webm',
-            'audio/ogg;codecs=opus',
-            'audio/ogg',
-        ];
-        for (const mimeType of mimeTypes) {
-            if (MediaRecorder.isTypeSupported(mimeType)) {
-                setSupportedMimeType(mimeType);
-                break;
-            }
-        }
-    }
-
-    // Check and monitor microphone permissions
-    if (navigator.permissions) {
-        navigator.permissions.query({ name: 'microphone' as PermissionName }).then(permissionStatus => {
-            setMicPermission(permissionStatus.state);
-            permissionStatus.onchange = () => {
-                setMicPermission(permissionStatus.state);
-            }
-        }).catch(err => {
-            console.error("Could not query microphone permissions.", err);
-        });
-    }
-
-    // Cleanup function
-    return () => {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
-      }
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
-      }
+    const checkNative = () => {
+      const native = nativeAudioRecorder.isNative();
+      setIsNativeMode(native);
+      console.log('[VoiceRecorder] Native mode:', native);
     };
+    checkNative();
   }, []);
 
-  const startRecording = async () => {
-    // If running in Capacitor native, request RECORD_AUDIO permission first
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const startTimer = () => {
+    setRecordingTime(0);
+    timerIntervalRef.current = setInterval(() => {
+      setRecordingTime(prevTime => prevTime + 1);
+    }, 1000);
+  };
+
+  const stopTimer = () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+  };
+
+  const startNativeRecording = async () => {
     try {
-      const isCapacitor = typeof (window as any).Capacitor !== 'undefined' && (window as any).Capacitor.isNativePlatform && (window as any).Capacitor.isNativePlatform();
-      if (isCapacitor) {
-        try {
-          // dynamic import to avoid runtime errors on web
-          const mod: any = await import('@capacitor/core');
-          const Permissions = mod?.Permissions || mod?.Plugins?.Permissions;
-          if (Permissions && typeof Permissions.request === 'function') {
-            const res = await Permissions.request({ name: 'microphone' as any });
-            if (res && res.state === 'denied') {
-              toastService.show('Microphone permission denied. Please enable it in system settings.', 'error', 5000);
-              return;
-            }
-          }
-        } catch (permErr) {
-          console.warn('Capacitor permission request failed, attempting browser flow', permErr);
+      console.log('[VoiceRecorder] Starting native recording...');
+      
+      const permission = await nativeAudioRecorder.ensurePermission();
+      console.log('[VoiceRecorder] Permission result:', permission);
+      
+      if (!permission.granted) {
+        toastService.show('Microphone permission is required. Please allow it in app settings.', 'error', 5000);
+        return;
+      }
+
+      await nativeAudioRecorder.startRecording();
+      setIsRecording(true);
+      startTimer();
+      console.log('[VoiceRecorder] Native recording started successfully');
+    } catch (error) {
+      console.error('[VoiceRecorder] Native start recording error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Could not start recording';
+      
+      if (errorMessage.includes('permission')) {
+        toastService.show('Microphone permission denied. Please enable it in app settings.', 'error', 5000);
+      } else if (errorMessage.includes('already recording') || errorMessage.includes('MICROPHONE_IN_USE')) {
+        toastService.show('Microphone is already in use. Please close other apps using the microphone.', 'error', 5000);
+      } else {
+        toastService.show('Could not start recording. Please try again.', 'error', 4000);
+      }
+    }
+  };
+
+  const stopNativeRecording = async () => {
+    try {
+      console.log('[VoiceRecorder] Stopping native recording...');
+      stopTimer();
+      
+      const result = await nativeAudioRecorder.stopRecording();
+      console.log('[VoiceRecorder] Native recording result:', result);
+      
+      setIsRecording(false);
+
+      if (result && result.audioUrl) {
+        const duration = result.duration || recordingTime;
+        onNewMessage(result.audioUrl, duration);
+        console.log('[VoiceRecorder] Native recording saved, duration:', duration);
+      } else {
+        toastService.show('Recording was too short or failed.', 'warning', 3000);
+      }
+    } catch (error) {
+      console.error('[VoiceRecorder] Native stop recording error:', error);
+      setIsRecording(false);
+      toastService.show('Failed to save recording. Please try again.', 'error', 4000);
+    }
+  };
+
+  const startWebRecording = async () => {
+    let supportedMimeType = '';
+    const mimeTypes = [
+      'audio/webm;codecs=opus',
+      'audio/mp4',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/ogg',
+    ];
+    
+    if (typeof MediaRecorder !== 'undefined') {
+      for (const mimeType of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+          supportedMimeType = mimeType;
+          break;
         }
       }
-    } catch (err) {
-      console.warn('Permission check error', err);
     }
-    if (micPermission === 'denied') {
-        toastService.show("Microphone access has been blocked. Please enable it in browser site settings.", 'error', 5000);
-        return;
-    }
-    
+
     if (!supportedMimeType) {
-        toastService.show("Sorry, this browser doesn't support audio recording.", 'error');
-        return;
+      toastService.show("This browser doesn't support audio recording.", 'error', 5000);
+      return;
     }
 
     try {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('[VoiceRecorder] Starting web recording...');
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      
       const mediaRecorder = new MediaRecorder(stream, { mimeType: supportedMimeType });
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
@@ -106,71 +144,87 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onNewMessage, disabled = 
         const audioBlob = new Blob(chunksRef.current, { type: supportedMimeType });
 
         if (audioBlob.size === 0) {
-            console.warn("Recording was too short or failed, resulting in an empty audio file.");
+          console.warn('[VoiceRecorder] Empty audio blob');
+          toastService.show('Recording was too short or failed.', 'warning', 3000);
         } else {
-            // Convert to base64 data URL so other clients (and deployments) can
-            // play the audio even when the original blob URL is not available.
-            const reader = new FileReader();
-            reader.onload = () => {
-              const result = reader.result as string | null;
-              if (result) {
-                onNewMessage(result, recordingTime);
-              } else {
-                // Fallback: create an object URL if read fails
-                try {
-                  const audioUrl = URL.createObjectURL(audioBlob);
-                  onNewMessage(audioUrl, recordingTime);
-                } catch (e) {
-                  console.warn('Failed to create audio URL for recorded blob', e);
-                }
-              }
-            };
-            reader.onerror = (e) => {
-              console.warn('Failed to read recorded audio blob as data URL', e);
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string | null;
+            if (result) {
+              onNewMessage(result, recordingTime);
+            } else {
               try {
                 const audioUrl = URL.createObjectURL(audioBlob);
                 onNewMessage(audioUrl, recordingTime);
-              } catch (err) {
-                console.warn('Failed to create object URL as fallback', err);
+              } catch (e) {
+                console.warn('[VoiceRecorder] Failed to create audio URL:', e);
+                toastService.show('Failed to save recording.', 'error', 4000);
               }
-            };
-            reader.readAsDataURL(audioBlob);
+            }
+          };
+          reader.onerror = () => {
+            try {
+              const audioUrl = URL.createObjectURL(audioBlob);
+              onNewMessage(audioUrl, recordingTime);
+            } catch (err) {
+              console.warn('[VoiceRecorder] Failed to create object URL:', err);
+              toastService.show('Failed to save recording.', 'error', 4000);
+            }
+          };
+          reader.readAsDataURL(audioBlob);
         }
 
-        // Clean up the stream tracks
-        stream.getTracks().forEach(track => track.stop());
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
       };
 
       mediaRecorder.start();
       setIsRecording(true);
-      setRecordingTime(0);
-      timerIntervalRef.current = setInterval(() => {
-        setRecordingTime(prevTime => prevTime + 1);
-      }, 1000);
+      startTimer();
+      console.log('[VoiceRecorder] Web recording started');
     } catch (error) {
-      console.error("Error starting recording:", error);
-      if (error instanceof DOMException && (error.name === "NotAllowedError" || error.name === "PermissionDeniedError")) {
-          toastService.show('Could not start recording. Microphone permission is required.', 'error');
+      console.error('[VoiceRecorder] Web start recording error:', error);
+      
+      if (error instanceof DOMException) {
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          toastService.show('Microphone permission denied. Please allow it in browser settings.', 'error', 5000);
+        } else if (error.name === 'NotFoundError') {
+          toastService.show('No microphone found. Please connect a microphone.', 'error', 5000);
+        } else if (error.name === 'NotReadableError') {
+          toastService.show('Microphone is busy or unavailable.', 'error', 4000);
+        } else {
+          toastService.show('Could not start recording. Please try again.', 'error', 4000);
+        }
       } else {
-          toastService.show('Could not start recording. Please ensure your microphone is working.', 'error');
+        toastService.show('Could not start recording. Please try again.', 'error', 4000);
       }
     }
   };
 
-  const stopRecording = () => {
+  const stopWebRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
     }
     setIsRecording(false);
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
+    stopTimer();
+  };
+
+  const startRecording = async () => {
+    if (isNativeMode) {
+      await startNativeRecording();
+    } else {
+      await startWebRecording();
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  const stopRecording = async () => {
+    if (isNativeMode) {
+      await stopNativeRecording();
+    } else {
+      stopWebRecording();
+    }
   };
 
   const handleButtonClick = () => {
@@ -180,6 +234,18 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onNewMessage, disabled = 
       startRecording();
     }
   };
+
+  useEffect(() => {
+    return () => {
+      stopTimer();
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, []);
 
   return (
     <div className="flex items-center justify-center w-full gap-4">
@@ -201,6 +267,9 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onNewMessage, disabled = 
         <div className="text-xl font-mono bg-slate-800/50 px-4 py-2 rounded-lg text-white">
           {formatTime(recordingTime)}
         </div>
+      )}
+      {!isRecording && isNativeMode && (
+        <span className="text-xs text-slate-500">Native</span>
       )}
     </div>
   );

@@ -3,9 +3,13 @@ const AI_API_BASE = (import.meta.env.VITE_AI_API_BASE_URL || '/api/ai').replace(
 export const missingApiKeyError = 'AI features are unavailable right now. Configure GEMINI_API_KEY on the server and restart.';
 export const isGeminiConfigured = true;
 
-const callAiEndpoint = async (path: string, payload: Record<string, unknown>): Promise<string> => {
+const callAiEndpoint = async (
+  path: string,
+  payload: Record<string, unknown>,
+  timeoutMs: number = 12000
+): Promise<string> => {
   const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), 12000);
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(`${AI_API_BASE}${path}`, {

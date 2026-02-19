@@ -52,10 +52,11 @@ export enum SenderRole {
 export interface VoiceMessage {
   id: string;
   audioUrl: string;
-  duration: number; // in seconds
+  duration: number;
   senderRole: SenderRole;
   senderName: string;
   timestamp: string;
+  textDescription?: string;
 }
 
 export interface CurrentUser {

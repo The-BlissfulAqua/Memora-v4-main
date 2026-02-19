@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { VoiceMessage, SenderRole } from '../../types';
 import nativeTts from '../../services/nativeTts';
+import toastService from '../../services/toastService';
 import PlayIcon from '../icons/PlayIcon';
 import PauseIcon from '../icons/PauseIcon';
 import UserIcon from '../icons/UserIcon';
@@ -105,8 +106,8 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({ message }) => {
   }, []);
 
   const speakFallback = (explicitText?: string) => {
-    const text = explicitText || `${message.senderName} says: hello. This is a short voice message for you.`;
-    // Prefer native TTS when available (Capacitor plugin)
+    const defaultText = `${message.senderName} sent a voice message.`;
+    const text = explicitText || message.textDescription || defaultText;
     if (nativeTts.isNative) {
       nativeTts.speak(text).catch((e: any) => {
         console.warn('nativeTts failed, falling back to Web Speech API', e);
@@ -183,7 +184,6 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({ message }) => {
       return;
     }
 
-    // Try audio playback first if there is an audioUrl
     if (audio && message.audioUrl) {
       audio.play().then(() => {
         setIsPlaying(true);
@@ -192,7 +192,6 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({ message }) => {
         try {
           const src = audio.src;
           if (src && src.startsWith('data:')) {
-            // Convert data URL to blob then to object URL and retry
             const resp = await fetch(src);
             const blob = await resp.blob();
             const objUrl = URL.createObjectURL(blob);
@@ -204,13 +203,13 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({ message }) => {
         } catch (e) {
           console.warn('Data URL blob fallback failed', e);
         }
-        // fallback to TTS if playback still fails
+        toastService.show('Audio unavailable. Using text-to-speech instead.', 'info', 3000);
         speakFallback();
       });
       return;
     }
 
-    // Otherwise use TTS fallback
+    toastService.show('No audio available. Using text-to-speech.', 'info', 3000);
     speakFallback();
   };
   

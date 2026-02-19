@@ -11,19 +11,53 @@ import DashboardSelectorModal from './components/shared/DashboardSelectorModal';
 import AcknowledgeModal from './components/shared/AcknowledgeModal';
 import ReminderBanner from './components/shared/ReminderBanner';
 import ToastViewport from './components/shared/ToastViewport';
+import toastService from './services/toastService';
 import { getNextReminderTrigger, isReminderDue } from './utils/reminders';
-// ReminderBanner removed per user's request: do not show upcoming reminders
+import voskSpeechService from './services/voskSpeechService';
 
 const App: React.FC = () => {
   const { state, dispatch } = useAppContext();
-  // Use global currentView from app state so login can control the dashboard
   const viewMode = state.currentView || ViewMode.PATIENT;
-  // Keep a ref to the latest view so timers can check the current view when they fire
   const currentViewRef = useRef(viewMode);
+  const [voskDownloadProgress, setVoskDownloadProgress] = useState<number | null>(null);
 
   useEffect(() => {
     currentViewRef.current = state.currentView || ViewMode.PATIENT;
   }, [state.currentView]);
+
+  useEffect(() => {
+    const initVosk = async () => {
+      if (!voskSpeechService.isNativePlatform()) {
+        console.log('[App] Not native platform, skipping Vosk initialization');
+        return;
+      }
+
+      console.log('[App] Initializing Vosk speech recognition...');
+      
+      try {
+        const result = await voskSpeechService.initialize((progress) => {
+          console.log('[App] Vosk download progress:', progress.progress + '%');
+          setVoskDownloadProgress(progress.progress);
+        });
+
+        if (result.success) {
+          console.log('[App] Vosk initialized successfully, model downloaded:', result.needsDownload);
+          if (result.needsDownload) {
+            toastService.show('Speech recognition ready!', 'success', 3000);
+          }
+        } else {
+          console.error('[App] Vosk initialization failed:', result.error);
+          toastService.show('Speech recognition unavailable: ' + result.error, 'warning', 5000);
+        }
+      } catch (error) {
+        console.error('[App] Vosk initialization error:', error);
+      } finally {
+        setVoskDownloadProgress(null);
+      }
+    };
+
+    initVosk();
+  }, []);
 
   const realtimeDotClass = (user: any) => {
     if (state.devMode) return 'bg-yellow-400';
@@ -99,41 +133,11 @@ const App: React.FC = () => {
     };
   }, [state.alerts, state.currentUser, state.devMode, state.currentView]);
 
-  // Request native permissions (microphone/camera) when a user logs in on native platforms
+  // Request notification permission when a user logs in.
+  // Feature-specific permissions (camera/mic) are requested where they are actually used.
   useEffect(() => {
-    const tryRequestNativePermissions = async () => {
-      try {
-        const Cap = (window as any).Capacitor;
-        if (Cap && typeof Cap.isNativePlatform === 'function' && Cap.isNativePlatform()) {
-          // dynamic import to avoid bundler issues on web
-          const core = await import('@capacitor/core');
-          const coreAny: any = core;
-          try {
-            if (coreAny.Permissions && typeof coreAny.Permissions.request === 'function') {
-              await coreAny.Permissions.request({ name: 'camera' as any });
-            }
-          } catch (e) {
-            console.warn('Camera permission request failed', e);
-          }
-          try {
-            if (coreAny.Permissions && typeof coreAny.Permissions.request === 'function') {
-              await coreAny.Permissions.request({ name: 'microphone' as any });
-            }
-          } catch (e) {
-            console.warn('Microphone permission request failed', e);
-          }
-        }
-      } catch (e) {
-        // Not a native environment or permissions plugin missing — ignore.
-        // On web, components already request permissions when needed.
-      }
-    };
-
     if (state.currentUser) {
-      // Request permissions for camera/microphone (existing) and additional
-      // best-effort requests for bluetooth, motion/activity, and notifications.
-      tryRequestNativePermissions();
-      // Request notification permission (web) and Local Notifications on native
+      // Request notification permission (web) and Local Notifications on native.
       (async () => {
         try {
           await localNotifications.requestPermission();
@@ -189,43 +193,51 @@ const App: React.FC = () => {
         const ms = target.getTime() - Date.now();
         const tid = window.setTimeout(async () => {
           try {
-            // Mark notified in app state first to prevent re-scheduling
             dispatch({ type: 'MARK_REMINDER_NOTIFIED', payload: reminder.id });
 
-            // Play audible alert regardless of current view
             const audioEl = soundService.playReminderAlert();
 
-            // Only show a visible notification popup when the current view is PATIENT
-            try {
-              const isPatientView = (currentViewRef.current === ViewMode.PATIENT);
-              if (isPatientView) {
-                let webNotification: any = null;
-                  // Ensure we have permission to show a web notification. Request if necessary.
-                  try {
-                    const perm = await localNotifications.requestPermission();
-                    if (perm !== 'granted') {
-                      console.warn('[App] notification permission not granted, skipping visible notification');
-                    } else {
-                      const res = await localNotifications.schedule({ id: Date.now(), title: reminder.title, body: reminder.title });
-                      if (res && typeof (res as any).close === 'function') {
-                        webNotification = res;
-                      }
-                    }
-                  } catch (e) {
-                    console.warn('Error requesting permission or scheduling notification', e);
-                  }
+            toastService.show(`Reminder: ${reminder.title}`, 'warning', 7000);
 
-                if (audioEl && webNotification) {
-                  const onEnded = () => {
-                    try { webNotification.close && webNotification.close(); } catch (e) { /* ignore */ }
-                    audioEl.removeEventListener('ended', onEnded);
-                  };
-                  audioEl.addEventListener('ended', onEnded);
-                  try { webNotification.onclick = () => { try { webNotification.close && webNotification.close(); } catch (e) { /* ignore */ } }; } catch (e) { /* ignore */ }
+            const isPatientView = (currentViewRef.current === ViewMode.PATIENT);
+            console.log('[App] Reminder triggered, isPatientView:', isPatientView, 'isNative:', localNotifications.isNative);
+            if (isPatientView) {
+              let webNotification: any = null;
+              try {
+                const perm = await localNotifications.requestPermission();
+                console.log('[App] Notification permission:', perm);
+                if (perm !== 'granted') {
+                  console.warn('[App] notification permission not granted, skipping visible notification');
+                } else {
+                  const res = await localNotifications.schedule({ id: Date.now(), title: reminder.title, body: reminder.title });
+                  console.log('[App] Notification schedule result:', res, 'typeof:', typeof res);
+                  if (res && typeof (res as any).close === 'function') {
+                    webNotification = res;
+                  }
                 }
+              } catch (e) {
+                console.warn('Error requesting permission or scheduling notification', e);
               }
-            } catch (e) {
-              console.warn('Error showing notification (view gating)', e);
+
+              if (audioEl && webNotification) {
+                const onEnded = () => {
+                  try { webNotification.close && webNotification.close(); } catch (e) { /* ignore */ }
+                  audioEl.removeEventListener('ended', onEnded);
+                };
+                const minDisplayMs = 5000;
+                let closed = false;
+                const closeOnce = () => {
+                  if (closed) return;
+                  closed = true;
+                  try { webNotification.close && webNotification.close(); } catch (e) { /* ignore */ }
+                  audioEl.removeEventListener('ended', onEnded);
+                };
+                setTimeout(closeOnce, minDisplayMs);
+                audioEl.addEventListener('ended', () => {
+                  setTimeout(closeOnce, Math.max(0, minDisplayMs - (audioEl.duration * 1000 || 0)));
+                });
+                try { webNotification.onclick = () => { closeOnce(); }; } catch (e) { /* ignore */ }
+              }
             }
           } catch (e) {
             console.error('Error in reminder timer handler', e);

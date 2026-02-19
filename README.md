@@ -202,6 +202,8 @@ Once the project is open and has finished its initial sync/build (this can take 
 
 1.  In the Android Studio top menu, go to **Build** -> **Build Bundle(s) / APK(s)** -> **Build APK(s)**.
 2.  Android Studio will start building. Once it's finished, a small notification will pop up in the bottom-right corner.
+3.  Click the **"locate"** link in the notification to open the folder containing your APK file. It is usually at `android/app/build/outputs/apk/debug/app-debug.apk`.
+4.  Transfer `app-debug.apk` to your Android phone and install it.
 
 ### Additional native configuration (recommended)
 
@@ -237,8 +239,36 @@ npx cap sync
 2. Open the native project in Android Studio / Xcode and ensure the plugin is present. Add any platform-specific notification channel setup on Android, and ensure you add any required Info.plist keys on iOS.
 
 3. The app contains a JS wrapper at `src/services/localNotifications.ts` which will attempt to use the plugin at runtime. Use `localNotifications.requestPermission()` to prompt the user and `localNotifications.schedule({...})` to schedule reminders.
-3.  Click the **"locate"** link in the notification to open the folder containing your brand new APK file. It's usually found in `android/app/build/outputs/apk/debug/app-debug.apk`.
-4.  You can now transfer this `app-debug.apk` file to your Android phone and install it.
+
+### Native Speech Recognition For AI Companion (Android)
+
+AI Companion now prefers a native speech path on Capacitor Android builds for better reliability than Web Speech API in mobile browsers/WebView.
+
+1. Install the speech plugin in your web project:
+
+```bash
+npm install @capacitor-community/speech-recognition
+npx cap sync android
+npm run verify:voice
+```
+
+2. Rebuild and run the native app:
+
+```bash
+npm run build:android
+```
+
+3. In AI Companion diagnostics, verify:
+- `native platform yes`
+- `native plugin yes`
+- `Run voice self-test` returns a pass/fail message and captures a short transcript when successful.
+- If unavailable, diagnostics should show a specific `reasonCode` (for example: `plugin_sync_missing`, `recognizer_unavailable`, `bridge_unimplemented`) plus a recovery action.
+
+Support matrix for this repo:
+- Guaranteed voice: Android native app (with plugin synced) and Chrome desktop web.
+- Other browsers/environments: AI Companion will switch to text-only mode with explicit diagnostics and recovery steps.
+
+If the plugin is not installed/synced, AI Companion will remain text-only on Android.
 
 ---
 
@@ -343,15 +373,12 @@ AndroidManifest permission snippets (add or ensure present in `android/app/src/m
 
 Runtime permission request examples (call these before using microphone/camera):
 
-Using web APIs (getUserMedia) will trigger a system prompt in the WebView automatically. For a smoother native UX, you can request permissions using Capacitor's `Permissions` (Android) APIs or the individual plugins.
+Using web APIs (`getUserMedia`) will trigger a system prompt in browser/WebView. For native speech recognition, request microphone permission through the speech plugin flow used in `src/services/nativeSpeechService.ts`.
 
-Example: request microphone/camera using the permissions plugin (Capacitor — pseudocode):
+Example: request microphone/camera using browser APIs:
 
 ```ts
-import { Permissions } from '@capacitor/core';
-
 async function ensureCameraAndMic() {
-    // navigator.mediaDevices.getUserMedia will prompt at runtime; use this to ensure permissions
     try {
         await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
         return true;

@@ -19,6 +19,12 @@ const companionSystemInstruction = `You are Digi, an AI companion for a person w
 5. Encouragement: Do not test memory; offer gentle prompts and reassuring questions.
 6. Engagement: Ask one simple supportive question at a time.`;
 
+const extractGeminiText = (body) =>
+  body?.candidates?.[0]?.content?.parts
+    ?.map((p) => (typeof p?.text === 'string' ? p.text : ''))
+    .join('')
+    .trim() || '';
+
 async function generateGeminiText({ prompt, systemInstruction }) {
   if (!GEMINI_API_KEY) {
     const err = new Error('Missing server GEMINI_API_KEY');
@@ -45,11 +51,7 @@ async function generateGeminiText({ prompt, systemInstruction }) {
     throw err;
   }
 
-  const text =
-    body?.candidates?.[0]?.content?.parts
-      ?.map((p) => (typeof p?.text === 'string' ? p.text : ''))
-      .join('')
-      .trim() || '';
+  const text = extractGeminiText(body);
   if (!text) {
     const err = new Error('Gemini returned empty content');
     err.statusCode = 502;

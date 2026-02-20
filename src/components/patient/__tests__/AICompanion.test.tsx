@@ -2,16 +2,16 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import AICompanion from '../AICompanion';
 import { getAICompanionChatResponse } from '../../../services/geminiService';
 
-const nativeSpeechMock = vi.hoisted(() => ({
+const voskSpeechMock = vi.hoisted(() => ({
   isNativePlatform: vi.fn(() => false),
-  isPluginDeclared: vi.fn(() => false),
-  isAvailable: vi.fn(async () => false),
-  getAvailability: vi.fn(async () => ({ available: false, reasonCode: 'not_native', permission: 'unknown' })),
-  getPermissionState: vi.fn(async () => 'unknown'),
-  ensurePermission: vi.fn(async () => ({ granted: false, state: 'unknown' })),
-  startListening: vi.fn(async () => {}),
-  stopListening: vi.fn(async () => ''),
-  addTranscriptListener: vi.fn(async () => async () => {}),
+  isReady: vi.fn(() => false),
+  getAvailability: vi.fn(async () => ({ available: false, reasonCode: 'not_native', modelDownloaded: false })),
+  initialize: vi.fn(async () => ({ success: false, needsDownload: false })),
+  ensurePermission: vi.fn(async () => ({ granted: false })),
+  startRecognition: vi.fn(async () => {}),
+  stopRecognition: vi.fn(async () => {}),
+  addResultListener: vi.fn(async () => async () => {}),
+  cleanup: vi.fn(async () => {}),
 }));
 
 vi.mock('../../../services/geminiService', () => ({
@@ -20,8 +20,8 @@ vi.mock('../../../services/geminiService', () => ({
   getAICompanionChatResponse: vi.fn(async (prompt: string) => `AI: ${prompt}`),
 }));
 
-vi.mock('../../../services/nativeSpeechService', () => ({
-  default: nativeSpeechMock,
+vi.mock('../../../services/voskSpeechService', () => ({
+  default: voskSpeechMock,
 }));
 
 class MockSpeechRecognition {
@@ -83,12 +83,11 @@ describe('AICompanion', () => {
       },
     });
 
-    nativeSpeechMock.isNativePlatform.mockReturnValue(false);
-    nativeSpeechMock.isPluginDeclared.mockReturnValue(false);
-    nativeSpeechMock.getAvailability.mockResolvedValue({
+    voskSpeechMock.isNativePlatform.mockReturnValue(false);
+    voskSpeechMock.getAvailability.mockResolvedValue({
       available: false,
       reasonCode: 'not_native',
-      permission: 'unknown',
+      modelDownloaded: false,
     });
   });
 
@@ -141,19 +140,32 @@ describe('AICompanion', () => {
     expect(await screen.findByText(/Voice status: text-only \(speech_api_unavailable\)/)).toBeInTheDocument();
   });
 
-  it('shows explicit native diagnostics when Android recognizer is unavailable', async () => {
-    nativeSpeechMock.isNativePlatform.mockReturnValue(true);
-    nativeSpeechMock.isPluginDeclared.mockReturnValue(true);
-    nativeSpeechMock.getAvailability.mockResolvedValue({
+  it('shows native mode when Vosk model is downloaded', async () => {
+    voskSpeechMock.isNativePlatform.mockReturnValue(true);
+    voskSpeechMock.getAvailability.mockResolvedValue({
+      available: true,
+      reasonCode: 'ok',
+      modelDownloaded: true,
+    });
+    voskSpeechMock.ensurePermission.mockResolvedValue({ granted: true });
+
+    render(<AICompanion onBack={() => {}} />);
+
+    expect(await screen.findByText(/Voice mode: Native/)).toBeInTheDocument();
+    expect(await screen.findByText(/Voice status: native \(ok\)/)).toBeInTheDocument();
+  });
+
+  it('shows downloading state when Vosk model is not downloaded', async () => {
+    voskSpeechMock.isNativePlatform.mockReturnValue(true);
+    voskSpeechMock.getAvailability.mockResolvedValue({
       available: false,
-      reasonCode: 'recognizer_unavailable',
-      permission: 'unknown',
+      reasonCode: 'model_not_downloaded',
+      modelDownloaded: false,
     });
 
     render(<AICompanion onBack={() => {}} />);
 
-    expect(await screen.findByText('Voice mode: Unavailable (text only)')).toBeInTheDocument();
-    expect(await screen.findByText(/Voice status: text-only \(recognizer_unavailable\)/)).toBeInTheDocument();
-    expect((await screen.findAllByText(/Android speech recognizer service is unavailable on this device/)).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/Voice mode: Unavailable/)).toBeInTheDocument();
+    expect(await screen.findByText(/Voice status: native \(model_not_downloaded\)/)).toBeInTheDocument();
   });
 });

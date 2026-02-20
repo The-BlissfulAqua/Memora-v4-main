@@ -1,10 +1,16 @@
 export type ToastKind = 'info' | 'success' | 'warning' | 'error';
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface ToastMessage {
   id: string;
   text: string;
   kind: ToastKind;
   durationMs: number;
+  actions?: ToastAction[];
 }
 
 type ToastListener = (toast: ToastMessage) => void;
@@ -21,12 +27,13 @@ const emit = (toast: ToastMessage) => {
   });
 };
 
-const show = (text: string, kind: ToastKind = 'info', durationMs = 3000) => {
+const show = (text: string, kind: ToastKind = 'info', durationMs = 3000, actions?: ToastAction[]) => {
   const toast: ToastMessage = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     text,
     kind,
     durationMs,
+    actions,
   };
   emit(toast);
 };

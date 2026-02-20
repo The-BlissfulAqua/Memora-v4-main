@@ -85,6 +85,7 @@ export interface Beacon {
 export type AppAction =
   | { type: 'COMPLETE_REMINDER'; payload: string }
   | { type: 'ADD_REMINDER'; payload: Reminder }
+  | { type: 'UPDATE_REMINDER'; payload: Partial<Reminder> & { id: string } }
   | { type: 'DELETE_REMINDER'; payload: string }
   | { type: 'TRIGGER_SOS'; payload: Alert }
   | { type: 'ADD_MEMORY'; payload: Memory }

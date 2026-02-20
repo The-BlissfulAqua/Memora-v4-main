@@ -97,6 +97,13 @@ export const appReducer = (state: AppState, action: AppActionAll): AppState => {
             ...state,
             reminders: state.reminders.filter(r => r.id !== action.payload)
         }
+    case 'UPDATE_REMINDER':
+        return {
+            ...state,
+            reminders: state.reminders.map((r) =>
+              r.id === action.payload.id ? { ...r, ...action.payload } : r
+            ),
+        }
     case 'TRIGGER_SOS':
       const sosMessage = action.payload.type === 'FALL'
         ? 'Potential fall detected!'

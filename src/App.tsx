@@ -154,20 +154,30 @@ const App: React.FC = () => {
       try {
         const reminderId = data?.reminderId;
         if (!reminderId) return;
+        
         if (actionId === 'COMPLETE') {
           dispatch({ type: 'COMPLETE_REMINDER', payload: reminderId });
           dispatch({ type: 'MARK_REMINDER_NOTIFIED', payload: reminderId });
+          soundService.stopReminderAlert();
         } else if (actionId === 'SNOOZE') {
-          // Add a new reminder 5 minutes from now, and mark this one notified
           const now = new Date();
           now.setMinutes(now.getMinutes() + 5);
           const hh = now.getHours().toString().padStart(2, '0');
           const mm = now.getMinutes().toString().padStart(2, '0');
           const newTime = `${hh}:${mm}`;
-          dispatch({ type: 'ADD_REMINDER', payload: { id: new Date().toISOString(), title: data.title || 'Snoozed Reminder', time: newTime, notified: false, completed: false, icon: 'medication' } });
-          dispatch({ type: 'MARK_REMINDER_NOTIFIED', payload: reminderId });
+          dispatch({ 
+            type: 'UPDATE_REMINDER', 
+            payload: { 
+              id: reminderId, 
+              time: newTime, 
+              notified: false, 
+              completed: false 
+            } 
+          });
+          soundService.stopReminderAlert();
         } else if (actionId === 'DISMISS') {
           dispatch({ type: 'MARK_REMINDER_NOTIFIED', payload: reminderId });
+          soundService.stopReminderAlert();
         }
       } catch (e) {
         console.warn('Error handling notification action in app', e);
@@ -197,7 +207,43 @@ const App: React.FC = () => {
 
             const audioEl = soundService.playReminderAlert();
 
-            toastService.show(`Reminder: ${reminder.title}`, 'warning', 7000);
+            const handleComplete = () => {
+              dispatch({ type: 'COMPLETE_REMINDER', payload: reminder.id });
+              soundService.stopReminderAlert();
+            };
+
+            const handleSnooze = () => {
+              const now = new Date();
+              now.setMinutes(now.getMinutes() + 5);
+              const hh = now.getHours().toString().padStart(2, '0');
+              const mm = now.getMinutes().toString().padStart(2, '0');
+              const newTime = `${hh}:${mm}`;
+              dispatch({ 
+                type: 'UPDATE_REMINDER', 
+                payload: { 
+                  id: reminder.id,
+                  time: newTime, 
+                  notified: false, 
+                  completed: false 
+                } 
+              });
+              soundService.stopReminderAlert();
+            };
+
+            const handleDismiss = () => {
+              soundService.stopReminderAlert();
+            };
+
+            toastService.show(
+              `Reminder: ${reminder.title}`, 
+              'warning', 
+              15000,
+              [
+                { label: '✓ Complete', onClick: handleComplete },
+                { label: '⏰ Snooze 5m', onClick: handleSnooze },
+                { label: '✕ Dismiss', onClick: handleDismiss },
+              ]
+            );
 
             const isPatientView = (currentViewRef.current === ViewMode.PATIENT);
             console.log('[App] Reminder triggered, isPatientView:', isPatientView, 'isNative:', localNotifications.isNative);
@@ -209,7 +255,12 @@ const App: React.FC = () => {
                 if (perm !== 'granted') {
                   console.warn('[App] notification permission not granted, skipping visible notification');
                 } else {
-                  const res = await localNotifications.schedule({ id: Date.now(), title: reminder.title, body: reminder.title });
+                  const res = await localNotifications.schedule({ 
+                    id: Date.now(), 
+                    title: reminder.title, 
+                    body: reminder.title,
+                    extra: { reminderId: reminder.id, title: reminder.title }
+                  });
                   console.log('[App] Notification schedule result:', res, 'typeof:', typeof res);
                   if (res && typeof (res as any).close === 'function') {
                     webNotification = res;

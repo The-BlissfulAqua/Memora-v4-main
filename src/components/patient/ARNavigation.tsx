@@ -189,16 +189,19 @@ const ARNavigation: React.FC<ARNavigationProps> = ({ onBack }) => {
     switch (navState) {
       case 'REQUESTING_PERMISSIONS':
         return (
-          <div className="flex flex-col items-center justify-center text-center h-full text-white p-4">
-            <h2 className="text-3xl font-bold">AR Navigation</h2>
-            <p className="mt-2 text-slate-400">This feature requires access to your camera and motion sensors.</p>
+          <div className="flex flex-col items-center justify-center text-center h-full text-[#F5F0E8] p-4">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#B8A9C9] to-[#9D8AA5] mb-6 text-3xl">
+              🧭
+            </div>
+            <h2 className="font-display text-3xl font-semibold">AR Navigation</h2>
+            <p className="mt-3 text-[#A8A0B4] max-w-xs">This feature requires access to your camera and motion sensors.</p>
             <button
               onClick={handleStart}
-              className="mt-8 px-8 py-4 bg-slate-700 text-white font-bold text-xl rounded-full shadow-lg hover:bg-slate-600 active:scale-95 transition-all disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
+              className="mt-8 px-8 py-4 bg-gradient-to-br from-[#B8A9C9] to-[#9D8AA5] text-white font-semibold text-lg rounded-full shadow-lg touch-feedback disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Grant Permissions
             </button>
-            {permissionError && <p className="text-sm text-red-400 mt-4 max-w-xs">{permissionError}</p>}
+            {permissionError && <p className="text-sm text-[#E07A7A] mt-4 max-w-xs">{permissionError}</p>}
           </div>
         );
 
@@ -210,8 +213,8 @@ const ARNavigation: React.FC<ARNavigationProps> = ({ onBack }) => {
           <>
             <NavigationArrow relativeBearing={relativeBearing} />
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full px-4 text-center">
-                <p className="text-white text-5xl font-bold drop-shadow-2xl">{stepsRemaining.toFixed(0)}</p>
-                <p className="text-slate-300 text-xl font-semibold drop-shadow-lg">steps remaining</p>
+                <p className="text-[#F5F0E8] text-5xl font-bold drop-shadow-2xl">{stepsRemaining.toFixed(0)}</p>
+                <p className="text-[#A8A0B4] text-xl font-medium drop-shadow-lg">steps remaining</p>
             </div>
           </>
         );
@@ -219,14 +222,14 @@ const ARNavigation: React.FC<ARNavigationProps> = ({ onBack }) => {
       case 'ARRIVED':
         return (
             <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-full max-w-sm px-4">
-                <div className="relative overflow-hidden rounded-2xl border border-blue-800 bg-slate-900 p-6 text-center shadow-2xl">
+                <div className="relative overflow-hidden rounded-2xl glass-card p-6 text-center shadow-2xl">
                     <div className="relative z-10 flex flex-col items-center">
                         <div className="text-5xl mb-4">🎉</div>
-                        <h2 className="text-3xl font-bold text-white">You have arrived!</h2>
-                        <p className="text-slate-300 mt-1">You've reached your destination.</p>
+                        <h2 className="font-display text-3xl font-semibold text-[#F5F0E8]">You have arrived!</h2>
+                        <p className="text-[#A8A0B4] mt-1">You've reached your destination.</p>
                         <button
                           onClick={handleFinish}
-                          className="mt-6 w-full px-8 py-3 bg-green-600/80 text-white font-bold text-lg rounded-full shadow-lg hover:bg-green-600 active:scale-95 transition-all border border-green-500"
+                          className="mt-6 w-full px-8 py-3 bg-gradient-to-br from-[#C9B896] to-[#B8A9C9] text-white font-semibold text-lg rounded-full shadow-lg touch-feedback"
                         >
                           Done
                         </button>
@@ -238,15 +241,15 @@ const ARNavigation: React.FC<ARNavigationProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-gray-900 overflow-hidden flex flex-col justify-between">
+    <div className="fixed inset-0 z-50 bg-[#1A1423] overflow-hidden flex flex-col justify-between">
       <video ref={videoRef} autoPlay muted playsInline className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-black/30"></div>
       
-      <header className="relative p-4 flex justify-between items-center bg-black/50 backdrop-blur-sm z-10">
-        <button onClick={handleFinish} className="text-white text-sm p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center gap-1">
+      <header className="relative p-4 flex justify-between items-center glass-card z-10 rounded-none border-b border-[rgba(255,255,255,0.06)]">
+        <button onClick={handleFinish} className="text-[#F5F0E8] text-sm p-2 rounded-xl glass-card touch-feedback flex items-center gap-1">
             <span className='text-lg'>&larr;</span> Back
         </button>
-        <div className="flex items-center gap-2 text-xs text-white">
+        <div className="flex items-center gap-2 text-xs text-[#A8A0B4]">
             <label htmlFor="devModeToggle">Dev Mode</label>
             <input
                 type="checkbox"
@@ -258,7 +261,7 @@ const ARNavigation: React.FC<ARNavigationProps> = ({ onBack }) => {
         </div>
       </header>
 
-      <main className={`relative flex-grow flex flex-col items-center justify-center text-white p-4 transition-transform duration-300 ${isSteppingAnimation ? 'animate-step-bump' : ''}`}>
+      <main className={`relative flex-grow flex flex-col items-center justify-center text-[#F5F0E8] p-4 transition-transform duration-300 ${isSteppingAnimation ? 'animate-step-bump' : ''}`}>
         {renderContent()}
       </main>
 
@@ -281,14 +284,15 @@ const ARNavigation: React.FC<ARNavigationProps> = ({ onBack }) => {
             appearance: none;
             width: 32px;
             height: 18px;
-            background-color: #4a5568;
+            background-color: rgba(45, 36, 56, 0.6);
             border-radius: 9px;
             position: relative;
             cursor: pointer;
             transition: background-color 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .toggle-checkbox:checked {
-            background-color: #48bb78;
+            background-color: #C9B896;
         }
         .toggle-checkbox::before {
             content: '';
@@ -296,9 +300,9 @@ const ARNavigation: React.FC<ARNavigationProps> = ({ onBack }) => {
             width: 14px;
             height: 14px;
             border-radius: 50%;
-            background-color: white;
-            top: 2px;
-            left: 2px;
+            background-color: #F5F0E8;
+            top: 1px;
+            left: 1px;
             transition: transform 0.2s;
         }
         .toggle-checkbox:checked::before {

@@ -29,12 +29,12 @@ const ReminderIcon: React.FC<{ icon: 'medication' | 'meal' | 'hydration' | 'musi
 
 const EventIcon: React.FC<{ icon: EventLogItem['icon'] }> = ({ icon }) => {
   switch (icon) {
-    case 'sos': return <span className="text-red-400">🚨</span>;
-    case 'fall': return <FallIcon className="w-4 h-4 text-orange-400"/>;
-    case 'emotion': return <CompanionIcon className="w-4 h-4 text-blue-400"/>;
-    case 'reminder': return <RemindersIcon className="w-4 h-4 text-green-400"/>;
-    case 'task': return <RemindersIcon className="w-4 h-4 text-slate-400"/>;
-    case 'memory': return <ImageIcon className="w-4 h-4 text-purple-400"/>;
+    case 'sos': return <span className="text-[#D45A5A]">🚨</span>;
+    case 'fall': return <FallIcon className="w-4 h-4 text-[#D4A878]"/>;
+    case 'emotion': return <CompanionIcon className="w-4 h-4 text-[#A495B8]"/>;
+    case 'reminder': return <RemindersIcon className="w-4 h-4 text-[#B8A078]"/>;
+    case 'task': return <RemindersIcon className="w-4 h-4 text-[#6A6280]"/>;
+    case 'memory': return <ImageIcon className="w-4 h-4 text-[#C98B8B]"/>;
     default: return null;
   }
 };
@@ -61,7 +61,6 @@ const FamilyView: React.FC = () => {
 
   const handleAddMemory = (e: React.FormEvent) => {
     e.preventDefault();
-    // Prevent submitting until we have a verified public image URL, and require caption/name
     if (!caption || !sharedBy) { toastService.show('Please fill out your name and a caption before sharing.', 'warning'); return; }
     if (!lastUploadName || lastUploadVerified !== true) {
       console.warn('[FamilyView] Attempted to submit before upload verification', { lastUploadName, lastUploadVerified, imageUrl });
@@ -71,25 +70,22 @@ const FamilyView: React.FC = () => {
     if (!imageUrl) { toastService.show('No image available to share. Please upload an image first.', 'warning'); return; }
     const newMemory: Memory = { id: new Date().toISOString(), imageUrl, caption, sharedBy };
     dispatch({ type: 'ADD_MEMORY', payload: newMemory });
-    // Clear caption and reset upload UI so the form is ready for a second upload
     setCaption('');
     clearUpload();
   };
 
   const clearUpload = () => {
-    // Revoke any object URL we created locally
     try {
       if (imageUrl && imageUrl.startsWith('blob:')) {
         URL.revokeObjectURL(imageUrl);
       }
-    } catch (e) { /* ignore */ }
+    } catch { /* ignore */ }
     setImageUrl('');
     setLastUploadName(null);
     setLastUploadVerified(null);
     setUploadProgress(null);
     setUploadToast(null);
-    // also clear the file input value if present
-    try { const inp = document.getElementById('family-image-input') as HTMLInputElement | null; if (inp) inp.value = ''; } catch (e) { /* ignore */ }
+    try { const inp = document.getElementById('family-image-input') as HTMLInputElement | null; if (inp) inp.value = ''; } catch { /* ignore */ }
   };
 
   const handleSendAIQuote = async () => {
@@ -100,218 +96,313 @@ const FamilyView: React.FC = () => {
       if (quoteText === missingApiKeyError) { toastService.show(quoteText, 'error', 5000); return; }
       const newQuote: SharedQuote = { id: new Date().toISOString(), text: quoteText, timestamp: new Date().toLocaleString() };
       dispatch({ type: 'ADD_QUOTE', payload: newQuote });
-    } catch (e) { console.error(e); toastService.show('Could not send a thought at this time.', 'error'); }
+    } catch { toastService.show('Could not send a thought at this time.', 'error'); }
     finally { setIsSendingQuote(false); }
   };
 
   const handleSendCustomQuote = () => {
-    if (!customThought.trim()) return; const newQuote: SharedQuote = { id: new Date().toISOString(), text: customThought.trim(), timestamp: new Date().toLocaleString() };
-    dispatch({ type: 'ADD_QUOTE', payload: newQuote }); setCustomThought(''); toastService.show('Your thought has been sent!', 'success');
+    if (!customThought.trim()) return;
+    const newQuote: SharedQuote = { id: new Date().toISOString(), text: customThought.trim(), timestamp: new Date().toLocaleString() };
+    dispatch({ type: 'ADD_QUOTE', payload: newQuote });
+    setCustomThought('');
+    toastService.show('Your thought has been sent!', 'success');
   };
 
   const handleNewVoiceMessage = (audioUrl: string, duration: number) => {
-    const newMessage: VoiceMessage = { id: new Date().toISOString(), audioUrl, duration, senderRole: SenderRole.FAMILY, senderName: sharedBy.trim(), timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+    const newMessage: VoiceMessage = {
+      id: new Date().toISOString(),
+      audioUrl,
+      duration,
+      senderRole: SenderRole.FAMILY,
+      senderName: sharedBy.trim(),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
     dispatch({ type: 'ADD_VOICE_MESSAGE', payload: newMessage });
   };
 
   return (
-    <div className="relative space-y-6 p-4 sm:p-6 bg-slate-900/70 backdrop-blur-xl border border-slate-700/50 rounded-3xl shadow-2xl">
-      <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-slate-700"></div>
-      <div className="absolute bottom-3 right-3 w-2 h-2 rounded-full bg-slate-700"></div>
-
-      <header className="border-b border-slate-700/50 pb-4">
-        <h1 className="text-3xl font-bold text-white">Family Dashboard</h1>
-        <p className="text-md text-slate-400">Stay connected with your loved one</p>
+    <div className="relative space-y-4 p-4 pb-20 h-full overflow-y-auto">
+      <header className="border-b border-[rgba(255,255,255,0.08)] pb-3">
+        <h1 className="font-display text-[26px] font-semibold text-white">Family Dashboard</h1>
+        <p className="text-[#B8B0C4] text-[14px] mt-1">Stay connected with your loved one</p>
       </header>
 
       {unacknowledgedAlerts.length > 0 && (
-        <div className="p-4 bg-red-800/50 border-2 border-red-500 rounded-xl shadow-lg animate-pulse">
-          <h2 className="text-xl font-bold text-white text-center mb-2">URGENT ALERT RECEIVED</h2>
-          <button onClick={handleAcknowledge} className="w-full py-3 bg-red-600 text-white font-bold rounded-lg shadow-md hover:bg-red-500 transition-colors">Acknowledge & Silence Alarm</button>
+        <div className="p-4 bg-[rgba(212,90,90,0.2)] border-2 border-[#D45A5A] rounded-xl animate-pulse">
+          <h2 className="text-[17px] font-semibold text-white text-center mb-3">URGENT ALERT RECEIVED</h2>
+          <button onClick={handleAcknowledge} className="w-full py-3 bg-gradient-to-br from-[#D45A5A] to-[#B04848] text-white font-medium rounded-xl touch-feedback">
+            Acknowledge & Silence Alarm
+          </button>
         </div>
       )}
 
-      <div className="p-4 bg-slate-800/40 rounded-xl shadow-md border border-slate-700/50">
-        <h2 className="text-xl font-bold text-gray-300 mb-3">Your Details</h2>
-        <input type="text" placeholder="Your Name (e.g., Daughter, Jane)" value={sharedBy} onChange={e => setSharedBy(e.target.value)} className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 text-sm"/>
-        <p className="text-xs text-slate-500 mt-1">Please fill this in to share memories or voice messages.</p>
+      <div className="p-3 rounded-xl glass-card">
+        <h2 className="text-[14px] font-semibold text-[#B8B0C4] mb-2">Your Details</h2>
+        <input
+          type="text"
+          placeholder="Your Name (e.g., Daughter, Jane)"
+          value={sharedBy}
+          onChange={e => setSharedBy(e.target.value)}
+          className="w-full px-3 py-2.5 bg-[rgba(30,26,42,0.6)] border border-[rgba(255,255,255,0.08)] rounded-lg text-white placeholder-[#6A6280] focus:outline-none focus:border-[rgba(164,149,184,0.4)] text-[14px]"
+        />
+        <p className="text-[11px] text-[#6A6280] mt-1.5">Please fill this in to share memories or voice messages.</p>
       </div>
 
-      <div className="p-4 bg-slate-800/40 rounded-xl shadow-md border border-slate-700/50">
-        <h2 className="text-xl font-bold text-gray-300 mb-3">Voice Messages</h2>
-        <div className="space-y-3 max-h-60 overflow-y-auto pr-2 mb-4">{voiceMessages.map(msg => <VoiceMessagePlayer key={msg.id} message={msg} />)}</div>
-        <div className='border-t border-slate-700/50 pt-4'>
-          <p className='text-sm text-slate-400 mb-2 text-center'>Send a voice note to your loved one</p>
+      <div className="p-3 rounded-xl glass-card">
+        <h2 className="text-[14px] font-semibold text-[#B8B0C4] mb-2">Voice Messages</h2>
+        <div className="space-y-2 max-h-48 overflow-y-auto pr-1 mb-3">
+          {voiceMessages.map(msg => <VoiceMessagePlayer key={msg.id} message={msg} />)}
+        </div>
+        <div className='border-t border-[rgba(255,255,255,0.08)] pt-3'>
+          <p className='text-[12px] text-[#6A6280] mb-2 text-center'>Send a voice note to your loved one</p>
           <VoiceRecorder onNewMessage={handleNewVoiceMessage} disabled={!sharedBy.trim()} />
         </div>
       </div>
 
-      <div className="p-4 bg-slate-800/40 rounded-xl shadow-md border border-slate-700/50">
-        <h2 className="text-xl font-bold text-gray-300 mb-3">Share a Memory</h2>
+      <div className="p-3 rounded-xl glass-card">
+        <h2 className="text-[14px] font-semibold text-[#B8B0C4] mb-2">Share a Memory</h2>
         <form onSubmit={handleAddMemory} className="space-y-3">
           <div className="w-full">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-slate-400">Upload an image to share</div>
-              <div>
-                <button type="button" onClick={() => document.getElementById('family-image-input')?.click()} className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg shadow-md focus:outline-none focus:ring-1 focus:ring-slate-500 text-sm">
-                  <ImageIcon className="w-4 h-4" /> Choose file
-                </button>
-              </div>
+              <div className="text-[12px] text-[#6A6280]">Upload an image to share</div>
+              <button
+                type="button"
+                onClick={() => document.getElementById('family-image-input')?.click()}
+                className="inline-flex items-center gap-2 px-3 py-1.5 glass-card text-white rounded-lg touch-feedback text-[12px]"
+              >
+                <ImageIcon className="w-4 h-4" /> Choose file
+              </button>
             </div>
-            {/* Removed client-side resizing: always upload the original file */}
-            <input id="family-image-input" type="file" accept="image/*" className="hidden" onChange={async (e) => {
-              const f = e.target.files && e.target.files[0]; if (!f) return;
-              if (isDev) console.debug('[FamilyView] file selected (original-only upload)', { name: f.name, size: f.size, type: f.type });
-              const demoUrl = (window as any).__DEMO_REALTIME_URL as string | undefined;
-              if (demoUrl) {
-                try {
-                  const httpBase = demoUrl.replace(/^wss?:\/\//, (m) => (m.startsWith('wss') ? 'https://' : 'http://'));
-                  const uploadEndpoint = `${httpBase.replace(/\/$/, '')}/upload`;
-                  const form = new FormData(); form.append('file', f, f.name);
-                  await new Promise<void>((resolve) => {
-                    const xhr = new XMLHttpRequest(); xhrRef.current = xhr; xhr.open('POST', uploadEndpoint, true);
-                    try { xhr.setRequestHeader('ngrok-skip-browser-warning', '1'); } catch (e) { /* ignore if restricted */ }
-                    if (isDev) console.debug('[FamilyView] XHR open ->', uploadEndpoint);
-                    xhr.onload = () => {
-                        if (isDev) console.debug('[FamilyView] XHR onload', xhr.status, xhr.responseText);
+            <input
+              id="family-image-input"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files && e.target.files[0];
+                if (!f) return;
+                if (isDev) console.debug('[FamilyView] file selected', { name: f.name, size: f.size, type: f.type });
+                const demoUrl = (window as any).__DEMO_REALTIME_URL as string | undefined;
+                if (demoUrl) {
+                  try {
+                    const httpBase = demoUrl.replace(/^wss?:\/\//, (m) => (m.startsWith('wss') ? 'https://' : 'http://'));
+                    const uploadEndpoint = `${httpBase.replace(/\/$/, '')}/upload`;
+                    const form = new FormData();
+                    form.append('file', f, f.name);
+                    await new Promise<void>((resolve) => {
+                      const xhr = new XMLHttpRequest();
+                      xhrRef.current = xhr;
+                      xhr.open('POST', uploadEndpoint, true);
+                      try { xhr.setRequestHeader('ngrok-skip-browser-warning', '1'); } catch { /* ignore */ }
+                      xhr.onload = () => {
                         xhrRef.current = null;
                         if (xhr.status >= 200 && xhr.status < 300) {
                           try {
                             const body = JSON.parse(xhr.responseText || '{}');
-                            if (isDev) console.debug('[FamilyView] upload success (server responded)', body);
                             const remoteUrl = body.url || '';
                             if (!remoteUrl) {
-                              console.warn('[FamilyView] upload response missing url', body);
-                              setImageUrl(''); setUploadToast('Upload returned no URL'); setTimeout(() => setUploadToast(null), 3000); resolve();
+                              setImageUrl('');
+                              setUploadToast('Upload returned no URL');
+                              setTimeout(() => setUploadToast(null), 3000);
+                              resolve();
                               return;
                             }
-                            // record filename and server-side verification if present
                             setLastUploadName(body.filename || null);
                             setLastUploadVerified(typeof body.verified === 'boolean' ? body.verified : null);
-                            // If server already verified the upload, accept it immediately and skip client verification.
                             if (body.verified === true) {
-                              if (isDev) console.debug('[FamilyView] server reported verified=true, accepting remote URL', remoteUrl);
                               setLastUploadVerified(true);
                               setImageUrl(remoteUrl);
-                              setUploadToast('Upload complete'); setTimeout(() => setUploadToast(null), 2500);
+                              setUploadToast('Upload complete');
+                              setTimeout(() => setUploadToast(null), 2500);
                               resolve();
                             } else {
-                              // Otherwise, attempt client-side verification but do not clear the preview on failure.
                               const verifier = new Image();
                               let verified = false;
                               const verifyTimeout = setTimeout(() => {
                                 if (!verified) {
-                                  console.warn('[FamilyView] image verification timed out', remoteUrl);
                                   setLastUploadVerified(false);
-                                  setUploadToast('Upload succeeded but verification timed out'); setTimeout(() => setUploadToast(null), 3500); resolve();
+                                  setUploadToast('Upload succeeded but verification timed out');
+                                  setTimeout(() => setUploadToast(null), 3500);
+                                  resolve();
                                 }
                               }, 5000);
                               verifier.onload = () => {
-                                verified = true; clearTimeout(verifyTimeout);
-                                if (isDev) console.debug('[FamilyView] remote image verified', remoteUrl);
+                                verified = true;
+                                clearTimeout(verifyTimeout);
                                 setLastUploadVerified(true);
                                 setImageUrl(remoteUrl);
-                                setUploadToast('Upload complete'); setTimeout(() => setUploadToast(null), 2500);
+                                setUploadToast('Upload complete');
+                                setTimeout(() => setUploadToast(null), 2500);
                                 resolve();
                               };
-                              verifier.onerror = (ev) => {
-                                verified = false; clearTimeout(verifyTimeout);
-                                console.error('[FamilyView] remote image verification failed', remoteUrl, ev);
-                                // Keep the remote URL visible to the user but mark as unverified so share is disabled
+                              verifier.onerror = () => {
+                                verified = false;
+                                clearTimeout(verifyTimeout);
                                 setLastUploadVerified(false);
-                                setUploadToast('Upload succeeded but remote image unreachable (unverified)'); setTimeout(() => setUploadToast(null), 4000);
+                                setUploadToast('Upload succeeded but remote image unreachable');
+                                setTimeout(() => setUploadToast(null), 4000);
                                 resolve();
                               };
-                              // Start verification
                               verifier.src = remoteUrl + (remoteUrl.includes('?') ? '&' : '?') + 'ts=' + Date.now();
                             }
-                          } catch (e) { console.warn('[FamilyView] parse response failed', e); resolve(); }
-                        } else if (xhr.status === 413) { setImageUrl(''); setUploadToast('File too large (max 5MB)'); setTimeout(() => setUploadToast(null), 3000); resolve(); }
-                        else if (xhr.status === 415) { setImageUrl(''); setUploadToast('Unsupported file type'); setTimeout(() => setUploadToast(null), 3000); resolve(); }
-                        else { console.warn('[FamilyView] upload failed status', xhr.status, xhr.responseText); setImageUrl(''); setUploadToast('Upload failed'); setTimeout(() => setUploadToast(null), 2500); resolve(); }
+                          } catch { resolve(); }
+                        } else if (xhr.status === 413) {
+                          setImageUrl('');
+                          setUploadToast('File too large (max 5MB)');
+                          setTimeout(() => setUploadToast(null), 3000);
+                          resolve();
+                        } else if (xhr.status === 415) {
+                          setImageUrl('');
+                          setUploadToast('Unsupported file type');
+                          setTimeout(() => setUploadToast(null), 3000);
+                          resolve();
+                        } else {
+                          setImageUrl('');
+                          setUploadToast('Upload failed');
+                          setTimeout(() => setUploadToast(null), 2500);
+                          resolve();
+                        }
                       };
-                    xhr.onerror = () => { console.error('[FamilyView] XHR error'); xhrRef.current = null; setImageUrl(''); setUploadToast('Upload error'); setTimeout(() => setUploadToast(null), 2500); resolve(); };
-                    xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) { const p = Math.round((ev.loaded / ev.total) * 100); setUploadProgress(p); if (isDev) console.debug('[FamilyView] upload progress', p); } };
-                    xhr.onloadend = () => { setUploadProgress(null); xhrRef.current = null; };
-                    xhr.send(form);
-                  });
-                  try { e.currentTarget.value = ''; } catch (err) { if (isDev) console.debug('[FamilyView] input clear ignored', err); }
-                  return;
-                } catch (uErr) { console.warn('[FamilyView] upload original failed, falling back to local preview', uErr); }
-              }
-              // fallback to local object URL preview if demo URL not configured or upload failed
-              setImageUrl(URL.createObjectURL(f)); try { e.currentTarget.value = ''; } catch (err) { if (isDev) console.debug('[FamilyView] input clear ignored', err); }
-            }} />
+                      xhr.onerror = () => {
+                        xhrRef.current = null;
+                        setImageUrl('');
+                        setUploadToast('Upload error');
+                        setTimeout(() => setUploadToast(null), 2500);
+                        resolve();
+                      };
+                      xhr.upload.onprogress = (ev) => {
+                        if (ev.lengthComputable) {
+                          setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+                        }
+                      };
+                      xhr.onloadend = () => {
+                        setUploadProgress(null);
+                        xhrRef.current = null;
+                      };
+                      xhr.send(form);
+                    });
+                    try { e.currentTarget.value = ''; } catch { /* ignore */ }
+                    return;
+                  } catch { /* fallback */ }
+                }
+                setImageUrl(URL.createObjectURL(f));
+                try { e.currentTarget.value = ''; } catch { /* ignore */ }
+              }}
+            />
           </div>
 
           <div>
             {imageUrl ? (
-              <div className="w-full rounded-lg overflow-hidden border border-slate-700/50">
+              <div className="w-full rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)]">
                 <img src={imageUrl} alt="preview" className="w-full object-cover" />
               </div>
             ) : (
-              <div className="text-sm text-slate-500">No image chosen yet.</div>
+              <div className="text-[12px] text-[#6A6280]">No image chosen yet.</div>
             )}
             {lastUploadName && (
-              <div className="mt-2 flex items-center gap-3 text-xs text-slate-400">
-                <div className="max-w-[60%] truncate px-2 py-1 bg-slate-800 rounded-lg border border-slate-700">File: <span className="truncate inline-block max-w-full align-middle">{lastUploadName}</span></div>
-                <div className={`px-2 py-1 rounded-lg ${lastUploadVerified ? 'bg-green-700 border-green-500' : 'bg-yellow-700 border-yellow-500'} border`}>{lastUploadVerified ? 'verified' : 'unverified'}</div>
-                <button type="button" onClick={clearUpload} title="Clear upload" className="ml-2 w-7 h-7 flex items-center justify-center bg-slate-700 hover:bg-slate-600 text-white rounded-full text-xs">✕</button>
+              <div className="mt-2 flex items-center gap-2 text-[11px] text-[#B8B0C4] flex-wrap">
+                <div className="truncate px-2 py-1 glass-card rounded-lg max-w-[50%]">File: {lastUploadName}</div>
+                <div className={`px-2 py-1 rounded-lg ${lastUploadVerified ? 'bg-[rgba(184,160,120,0.25)] text-[#B8A078]' : 'bg-[rgba(212,168,120,0.25)] text-[#D4A878]'}`}>{lastUploadVerified ? 'verified' : 'unverified'}</div>
+                <button type="button" onClick={clearUpload} title="Clear upload" className="w-6 h-6 flex items-center justify-center glass-card text-[#B8B0C4] rounded-full text-xs touch-feedback">✕</button>
               </div>
             )}
           </div>
 
-          <UploadProgress progress={uploadProgress} message={uploadToast} onCancel={() => { if (xhrRef.current) { try { xhrRef.current.abort(); } catch (e) {} xhrRef.current = null; setUploadProgress(null); setUploadToast('Upload cancelled'); setTimeout(() => setUploadToast(null), 2000); } }} />
+          <UploadProgress progress={uploadProgress} message={uploadToast} onCancel={() => {
+            if (xhrRef.current) {
+              try { xhrRef.current.abort(); } catch { /* ignore */ }
+              xhrRef.current = null;
+              setUploadProgress(null);
+              setUploadToast('Upload cancelled');
+              setTimeout(() => setUploadToast(null), 2000);
+            }
+          }} />
 
-          <textarea placeholder="Caption for the memory" value={caption} onChange={e => setCaption(e.target.value)} rows={2} className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 text-sm"/>
-          <button type="submit" disabled={!sharedBy.trim() || lastUploadVerified !== true} className="w-full px-5 py-2 bg-slate-700 text-white font-semibold rounded-lg shadow-md hover:bg-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-500 text-sm disabled:opacity-50 disabled:cursor-not-allowed">Share Memory</button>
+          <textarea
+            placeholder="Caption for the memory"
+            value={caption}
+            onChange={e => setCaption(e.target.value)}
+            rows={2}
+            className="w-full px-3 py-2.5 bg-[rgba(30,26,42,0.6)] border border-[rgba(255,255,255,0.08)] rounded-lg text-white placeholder-[#6A6280] focus:outline-none focus:border-[rgba(164,149,184,0.4)] resize-none text-[14px]"
+          />
+          <button
+            type="submit"
+            disabled={!sharedBy.trim() || lastUploadVerified !== true}
+            className="w-full py-2.5 bg-gradient-to-br from-[#A495B8] to-[#8A7A9A] text-white font-medium rounded-xl touch-feedback disabled:opacity-50 disabled:cursor-not-allowed text-[14px]"
+          >
+            Share Memory
+          </button>
         </form>
       </div>
 
-      <div className="p-4 bg-slate-800/40 rounded-xl shadow-md border border-slate-700/50">
-        <h2 className="text-xl font-bold text-gray-300 mb-3">Send a Comforting Thought</h2>
-        <p className='text-sm text-slate-400 mb-3'>Send a short, positive message to your loved one's home screen.</p>
+      <div className="p-3 rounded-xl glass-card">
+        <h2 className="text-[14px] font-semibold text-[#B8B0C4] mb-2">Send a Comforting Thought</h2>
+        <p className='text-[12px] text-[#6A6280] mb-3'>Send a short, positive message to your loved one's home screen.</p>
         <div className="space-y-3">
-          <button onClick={handleSendAIQuote} disabled={isSendingQuote || !isGeminiConfigured} className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-slate-700 text-white font-semibold rounded-lg shadow-md hover:bg-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-500 text-sm disabled:opacity-50 disabled:cursor-not-allowed" title={!isGeminiConfigured ? 'API Key not configured. See README.md' : 'Send an AI-generated thought'}>
-            {isSendingQuote ? 'Generating...' : <> <MusicIcon className="w-5 h-5"/> Generate & Send Thought </>}
+          <button
+            onClick={handleSendAIQuote}
+            disabled={isSendingQuote || !isGeminiConfigured}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-br from-[#C49868] to-[#A89060] text-white font-medium rounded-xl touch-feedback disabled:opacity-50 disabled:cursor-not-allowed text-[14px]"
+          >
+            {isSendingQuote ? 'Generating...' : <> <MusicIcon className="w-4 h-4"/> Generate & Send Thought </>}
           </button>
-          <div className="flex items-center gap-2 border-t border-slate-700/50 pt-3">
-            <input type="text" placeholder="Or write a personal message..." value={customThought} onChange={(e) => setCustomThought(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendCustomQuote()} className="flex-grow px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 text-sm" />
-            <button onClick={handleSendCustomQuote} disabled={!customThought.trim()} className="flex-shrink-0 px-4 py-2 bg-slate-600 text-white font-semibold rounded-lg shadow-md hover:bg-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed">Send</button>
+          <div className="flex flex-col gap-2 border-t border-[rgba(255,255,255,0.08)] pt-3">
+            <input
+              type="text"
+              placeholder="Or write a personal message..."
+              value={customThought}
+              onChange={(e) => setCustomThought(e.target.value)}
+              className="w-full px-3 py-2.5 bg-[rgba(30,26,42,0.6)] border border-[rgba(255,255,255,0.08)] rounded-lg text-white placeholder-[#6A6280] focus:outline-none focus:border-[rgba(164,149,184,0.4)] text-[14px]"
+            />
+            <button
+              onClick={handleSendCustomQuote}
+              disabled={!customThought.trim()}
+className="w-full py-2.5 bg-gradient-to-br from-[#8A7AA8] to-[#6A5A88] text-white font-medium rounded-xl touch-feedback disabled:opacity-50 disabled:cursor-not-allowed text-[14px]"
+            >
+              Send
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="p-4 bg-slate-800/40 rounded-xl shadow-md border border-slate-700/50">
-        <h2 className="text-xl font-bold text-gray-300 mb-3">Patient Activity Timeline</h2>
-        <ul className="space-y-3 max-h-48 overflow-y-auto pr-2">{eventLog.slice().sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map(event => (
-          <li key={event.id} className="text-sm text-slate-400 flex items-start gap-3">
-            <div className='mt-1'><EventIcon icon={event.icon} /></div>
-            <div>
-              <p className="font-semibold text-slate-300">{event.text}</p>
-              <p className='text-xs'>{event.timestamp}</p>
-            </div>
-          </li>
-        ))}</ul>
+      <div className="p-3 rounded-xl glass-card">
+        <h2 className="text-[14px] font-semibold text-[#B8B0C4] mb-2">Patient Activity Timeline</h2>
+        <ul className="space-y-2 max-h-40 overflow-y-auto pr-1">
+          {eventLog.slice().sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map(event => (
+            <li key={event.id} className="text-[12px] text-[#B8B0C4] flex items-start gap-2">
+              <div className='mt-0.5'><EventIcon icon={event.icon} /></div>
+              <div>
+                <p className="font-medium text-white">{event.text}</p>
+                <p className='text-[11px] text-[#6A6280]'>{event.timestamp}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
 
-      <div className="p-4 bg-slate-800/40 rounded-xl shadow-md border border-slate-700/50">
-        <h2 className="text-xl font-bold text-gray-300 mb-3">Patient's Daily Schedule</h2>
+      <div className="p-3 rounded-xl glass-card">
+        <h2 className="text-[14px] font-semibold text-[#B8B0C4] mb-2">Patient's Daily Schedule</h2>
         {reminders.length > 0 ? (
-          <ul className="space-y-3">{reminders.map(reminder => (
-            <li key={reminder.id} className="p-3 bg-slate-800/50 rounded-lg shadow-sm flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="p-2 rounded-lg mr-4 bg-slate-700 text-slate-300"><ReminderIcon icon={reminder.icon} className="w-6 h-6" /></div>
-                <div>
-                  <p className="font-semibold text-gray-200">{reminder.title}</p>
-                  <p className="text-sm text-slate-400">{reminder.time}</p>
+          <ul className="space-y-2">
+            {reminders.map(reminder => (
+              <li key={reminder.id} className="p-2.5 rounded-xl glass-card flex items-center justify-between">
+                <div className="flex items-center min-w-0 flex-1">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-[rgba(164,149,184,0.35)] to-[rgba(138,122,154,0.25)] mr-3 flex-shrink-0">
+                    <ReminderIcon icon={reminder.icon} className="w-5 h-5 text-[#B8B0C4]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-white text-[14px] truncate">{reminder.title}</p>
+                    <p className="text-[12px] text-[#6A6280]">{reminder.time}</p>
+                  </div>
                 </div>
-              </div>
-              <span className={`px-3 py-1 text-xs font-bold rounded-full ${reminder.completed ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>{reminder.completed ? 'COMPLETED' : 'PENDING'}</span>
-            </li>
-          ))}</ul>
+                <span className={`px-2 py-1 text-[10px] font-semibold rounded-full flex-shrink-0 ml-2 ${reminder.completed ? 'bg-[rgba(184,160,120,0.25)] text-[#B8A078]' : 'bg-[rgba(212,168,120,0.25)] text-[#D4A878]'}`}>
+                  {reminder.completed ? 'COMPLETED' : 'PENDING'}
+                </span>
+              </li>
+            ))}
+          </ul>
         ) : (
-          <p className="text-slate-500 text-center py-4">No reminders scheduled for today.</p>
+          <p className="text-[#6A6280] text-center py-3 text-[13px]">No reminders scheduled for today.</p>
         )}
       </div>
     </div>

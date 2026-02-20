@@ -16,11 +16,11 @@ interface VoiceMessagePlayerProps {
 const RoleIcon: React.FC<{ role: SenderRole }> = ({ role }) => {
     switch (role) {
         case SenderRole.PATIENT:
-            return <UserIcon className="w-6 h-6 text-slate-300" />;
+            return <UserIcon className="w-6 h-6 text-[#A8A0B4]" />;
         case SenderRole.FAMILY:
-            return <UsersIcon className="w-6 h-6 text-slate-300" />;
+            return <UsersIcon className="w-6 h-6 text-[#A8A0B4]" />;
         case SenderRole.CAREGIVER:
-            return <CaregiverIcon className="w-6 h-6 text-slate-300" />;
+            return <CaregiverIcon className="w-6 h-6 text-[#A8A0B4]" />;
         default:
             return null;
     }
@@ -222,26 +222,26 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({ message }) => {
   return (
     <div className={`flex items-center gap-3 w-full ${isUserMessage ? 'justify-end' : ''}`}>
         <div className={`flex flex-col ${isUserMessage ? 'items-end' : 'items-start'}`}>
-            <div className={`p-3 rounded-xl max-w-xs w-full shadow-md border ${isUserMessage ? 'bg-slate-700 border-slate-600' : 'bg-slate-800 border-slate-700/50'}`}>
+            <div className={`p-3 rounded-2xl max-w-xs w-full shadow-md border ${isUserMessage ? 'bg-gradient-to-br from-[rgba(184,169,201,0.4)] to-[rgba(157,138,165,0.3)] border-[rgba(184,169,201,0.2)]' : 'glass-card border-[rgba(255,255,255,0.06)]'}`}>
                 <div className="flex items-center gap-3">
-                     <div className="flex-shrink-0 bg-slate-900/50 p-2 rounded-full">
+                     <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-[rgba(45,36,56,0.5)]">
                         <RoleIcon role={message.senderRole} />
                      </div>
                      <div className='flex-grow'>
-                        <p className={`font-bold text-sm ${isUserMessage ? 'text-white' : 'text-slate-300'}`}>{message.senderName}</p>
-                        <p className="text-xs text-slate-400">{message.timestamp}</p>
+                        <p className={`font-medium text-sm ${isUserMessage ? 'text-[#F5F0E8]' : 'text-[#F5F0E8]'}`}>{message.senderName}</p>
+                        <p className="text-xs text-[#7A7582]">{message.timestamp}</p>
                      </div>
                 </div>
 
                 <div className="flex items-center gap-2 mt-3">
                     <audio ref={audioRef} src={message.audioUrl} preload="metadata" />
-                    <button onClick={togglePlay} className="flex-shrink-0 text-white bg-slate-600/50 hover:bg-slate-600/80 rounded-full p-2">
+                    <button onClick={togglePlay} className="flex-shrink-0 text-white bg-gradient-to-br from-[#9A8BB5] to-[#7A6A9A] rounded-full p-2 touch-feedback">
                         {isPlaying ? <PauseIcon className="w-5 h-5" /> : <PlayIcon className="w-5 h-5" />}
                     </button>
-                    <div className="flex-grow h-2 bg-slate-900/50 rounded-full overflow-hidden">
-                        <div className="h-full bg-slate-500" style={{ width: `${progress}%` }}></div>
+                    <div className="flex-grow h-2 bg-[rgba(45,36,56,0.5)] rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-[#B8A9C9] to-[#D4A5A5]" style={{ width: `${progress}%` }}></div>
                     </div>
-                    <span className="text-xs text-slate-400 font-mono w-12 text-right">
+                    <span className="text-xs text-[#7A7582] font-mono w-12 text-right">
                         {isPlaying ? formatTime(currentTime) : formatTime(message.duration)}
                     </span>
                 </div>

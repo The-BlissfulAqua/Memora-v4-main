@@ -79,26 +79,24 @@ const CognitiveGames: React.FC<CognitiveGamesProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="relative p-4 sm:p-6 bg-slate-900/70 backdrop-blur-xl border border-slate-700/50 rounded-3xl shadow-2xl h-[95vh] flex flex-col">
-       {/* Decorative screws */}
-       <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-slate-700"></div>
-       <div className="absolute bottom-3 right-3 w-2 h-2 rounded-full bg-slate-700"></div>
-
-      <header className="flex items-center justify-between pb-4 border-b border-slate-700/50">
-        <button onClick={onBack} className="text-slate-400 text-sm p-2 rounded-full hover:bg-slate-800/50 transition-colors mr-2 flex items-center gap-1">
+    <div className="relative p-4 sm:p-6 h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex flex-col glass-card rounded-3xl">
+      <header className="flex items-center justify-between pb-4 border-b border-[rgba(255,255,255,0.06)]">
+        <button onClick={onBack} className="text-[#A8A0B4] text-sm p-2 rounded-xl touch-feedback flex items-center gap-1">
           <span className='text-lg'>&larr;</span> Back
         </button>
-        <h2 className="text-2xl font-bold text-white">Memory Game</h2>
-        <div className="text-lg font-semibold text-slate-400">Moves: <span className="font-bold text-white">{moves}</span></div>
+        <h2 className="font-display text-2xl font-semibold text-[#F5F0E8]">Memory Game</h2>
+        <div className="text-sm font-medium text-[#7A7582]">Moves: <span className="font-semibold text-[#F5F0E8]">{moves}</span></div>
       </header>
 
       <main className="flex-grow flex flex-col items-center justify-center p-4">
         {isGameOver ? (
           <div className="text-center">
-            <div className="text-6xl mb-4">🎉</div>
-            <h3 className="text-3xl font-bold text-green-400">You Won!</h3>
-            <p className="text-lg text-slate-400 mb-6">Total moves: {moves}</p>
-            <button onClick={resetGame} className="px-8 py-4 bg-slate-700 text-white font-bold text-xl rounded-full shadow-lg hover:bg-slate-600 active:scale-95 transition-all">
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#C9B896] to-[#B8A9C9] mx-auto mb-6 text-4xl">
+              🎉
+            </div>
+            <h3 className="font-display text-3xl font-semibold text-[#C9B896]">You Won!</h3>
+            <p className="text-lg text-[#A8A0B4] mb-6">Total moves: {moves}</p>
+            <button onClick={resetGame} className="px-8 py-4 bg-gradient-to-br from-[#B8A9C9] to-[#9D8AA5] text-white font-semibold text-lg rounded-full touch-feedback">
               Play Again
             </button>
           </div>
@@ -116,12 +114,12 @@ const CognitiveGames: React.FC<CognitiveGamesProps> = ({ onBack }) => {
                   }`}
                 >
                   {/* Card Back */}
-                  <div className="absolute w-full h-full backface-hidden flex items-center justify-center bg-slate-800/80 rounded-lg cursor-pointer shadow-lg border border-slate-700/50 hover:bg-slate-700/80">
-                    <span className="text-3xl text-slate-400 font-bold">?</span>
+                  <div className="absolute w-full h-full backface-hidden flex items-center justify-center glass-card rounded-xl cursor-pointer touch-feedback">
+                    <span className="text-2xl text-[#7A7582] font-bold">?</span>
                   </div>
                   {/* Card Front */}
-                  <div className={`absolute w-full h-full backface-hidden flex items-center justify-center rounded-lg rotate-y-180 transition-all duration-300 ${card.isMatched ? 'bg-green-800/70 border border-green-600' : 'bg-slate-600/90'}`}>
-                    <span className="text-4xl sm:text-5xl">{card.value}</span>
+                  <div className={`absolute w-full h-full backface-hidden flex items-center justify-center rounded-xl rotate-y-180 transition-all duration-300 ${card.isMatched ? 'bg-gradient-to-br from-[rgba(201,184,150,0.4)] to-[rgba(184,169,201,0.3)] border border-[rgba(201,184,150,0.3)]' : 'bg-gradient-to-br from-[rgba(45,36,56,0.6)] to-[rgba(45,36,56,0.4)]'}`}>
+                    <span className="text-3xl sm:text-4xl">{card.value}</span>
                   </div>
                 </div>
               </div>

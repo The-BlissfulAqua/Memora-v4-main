@@ -107,7 +107,7 @@ const PatientView: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full max-w-[420px] mx-auto relative">
       {renderScreen()}
     </div>
   );

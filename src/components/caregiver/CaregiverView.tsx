@@ -9,11 +9,9 @@ import FallIcon from '../icons/FallIcon';
 import CompanionIcon from '../icons/CompanionIcon';
 import VoiceMessagePlayer from '../shared/VoiceMessagePlayer';
 import VoiceRecorder from '../shared/VoiceRecorder';
-import soundService from '../../services/soundService';
-import MusicIcon from '../icons/MusicIcon';
 import toastService from '../../services/toastService';
+import MusicIcon from '../icons/MusicIcon';
 
-// Helper to check if a reminder is due (time-only, compares hh:mm against now)
 function isReminderDue(reminderTime: string) {
   const now = new Date();
   const [h, m] = reminderTime.split(':');
@@ -32,26 +30,19 @@ const ReminderIcon: React.FC<{ icon: 'medication' | 'meal' | 'hydration' | 'musi
     }
 };
 
-
 const CaregiverView: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const { reminders, alerts, voiceMessages } = state;
 
-  // Caregiver view should not play reminder audio or auto-mark reminders notified.
-  // Reminder playback/notification is handled on the Patient view only.
-  
   const unacknowledgedAlerts = alerts.filter(
     a => (a.type === 'SOS' || a.type === 'FALL') && a.requiresAcknowledgement
   );
-
-  // Alert sound playback is handled centrally in App.tsx so that only caregivers/family/dev hear it.
-
 
   const deleteReminder = (id: string) => {
     if (window.confirm('Are you sure you want to delete this reminder?')) {
         dispatch({ type: 'DELETE_REMINDER', payload: id });
     }
-  }
+  };
 
   const handleSimulateFall = () => {
       dispatch({
@@ -64,7 +55,7 @@ const CaregiverView: React.FC = () => {
           }
       });
       toastService.show('Fall alert sent.', 'warning');
-  }
+  };
 
   const handleNewVoiceMessage = (audioUrl: string, duration: number) => {
     const newMessage: VoiceMessage = {
@@ -87,35 +78,23 @@ const CaregiverView: React.FC = () => {
       }
   };
 
-  const alertColorClasses = {
-      SOS: 'bg-red-900/50 border-red-700/80 text-red-200',
-      FALL: 'bg-orange-900/50 border-orange-700/80 text-orange-200',
-      EMOTION: 'bg-blue-900/50 border-blue-700/80 text-blue-200',
-  };
-
   const handleAcknowledge = () => {
     dispatch({ type: 'ACKNOWLEDGE_ALERTS' });
   };
 
-
   return (
-    <div className="relative space-y-6 p-4 sm:p-6 bg-slate-900/70 backdrop-blur-xl border border-slate-700/50 rounded-3xl shadow-2xl">
-  {/* Reminder playback and notifications are intentionally handled on Patient view only */}
-      <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-slate-700"></div>
-      <div className="absolute bottom-3 right-3 w-2 h-2 rounded-full bg-slate-700"></div>
-
-      <header className="border-b border-slate-700/50 pb-4">
-        <h1 className="text-3xl font-bold text-white">Caregiver Dashboard</h1>
-        <p className="text-md text-slate-400">Manage patient schedule and alerts for Memora</p>
+    <div className="relative space-y-4 p-4 pb-20 h-full overflow-y-auto">
+      <header className="border-b border-[rgba(255,255,255,0.08)] pb-3">
+        <h1 className="font-display text-[26px] font-semibold text-white">Caregiver Dashboard</h1>
+        <p className="text-[#B8B0C4] text-[14px] mt-1">Manage patient schedule and alerts for Memora</p>
       </header>
 
       {unacknowledgedAlerts.length > 0 && (
-        <div className="p-4 bg-red-800/50 border-2 border-red-500 rounded-xl shadow-lg animate-pulse">
-            <h2 className="text-xl font-bold text-white text-center mb-2">URGENT ALERT RECEIVED</h2>
+        <div className="p-4 bg-[rgba(212,90,90,0.2)] border-2 border-[#D45A5A] rounded-xl animate-pulse">
+            <h2 className="text-[17px] font-semibold text-white text-center mb-3">URGENT ALERT RECEIVED</h2>
             <button
                 onClick={handleAcknowledge}
-                className="w-full py-3 bg-red-600 text-white font-bold rounded-lg shadow-md hover:bg-red-500 transition-colors"
-                aria-label="Acknowledge and silence alarm"
+                className="w-full py-3 bg-gradient-to-br from-[#D45A5A] to-[#B04848] text-white font-medium rounded-xl touch-feedback"
             >
                 Acknowledge & Silence Alarm
             </button>
@@ -124,15 +103,15 @@ const CaregiverView: React.FC = () => {
       
       {alerts.length > 0 && (
           <div className="space-y-3">
-            <h2 className="text-xl font-bold text-gray-300">Urgent Alerts</h2>
+            <h2 className="text-[14px] font-semibold text-[#B8B0C4]">Urgent Alerts</h2>
             {alerts.map(alert => (
-                <div key={alert.id} className={`p-4 rounded-xl shadow-lg ${alertColorClasses[alert.type]}`}>
+                <div key={alert.id} className="p-3 rounded-xl glass-card">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <AlertIcon type={alert.type} />
                         <div>
-                            <p className="font-semibold">{alert.message}</p>
-                            <p className="text-sm text-slate-400">{alert.timestamp}</p>
+                            <p className="font-medium text-white text-[14px]">{alert.message}</p>
+                            <p className="text-[12px] text-[#6A6280]">{alert.timestamp}</p>
                         </div>
                     </div>
                     { (alert.type === 'SOS' || alert.type === 'FALL') && <span className="text-xl animate-ping">🚨</span> }
@@ -142,55 +121,55 @@ const CaregiverView: React.FC = () => {
           </div>
       )}
 
-      <div className="p-4 bg-slate-800/40 rounded-xl shadow-md border border-slate-700/50">
-        <h2 className="text-xl font-bold text-gray-300 mb-3">Voice Mailbox</h2>
-        <div className="space-y-3 max-h-60 overflow-y-auto pr-2 mb-4">
+      <div className="p-3 rounded-xl glass-card">
+        <h2 className="text-[14px] font-semibold text-[#B8B0C4] mb-2">Voice Mailbox</h2>
+        <div className="space-y-2 max-h-48 overflow-y-auto pr-1 mb-3">
             {voiceMessages.map(msg => <VoiceMessagePlayer key={msg.id} message={msg} />)}
         </div>
-        <div className='border-t border-slate-700/50 pt-4'>
-            <p className='text-sm text-slate-400 mb-2 text-center'>Send a voice note to patient and family</p>
+        <div className='border-t border-[rgba(255,255,255,0.08)] pt-3'>
+            <p className='text-[12px] text-[#6A6280] mb-2 text-center'>Send a voice note to patient and family</p>
             <VoiceRecorder onNewMessage={handleNewVoiceMessage} />
         </div>
       </div>
 
-      <div className="p-4 bg-slate-800/40 rounded-xl shadow-md border border-slate-700/50">
-        <h2 className="text-xl font-bold text-gray-300 mb-3">Add New Reminder</h2>
+      <div className="p-3 rounded-xl glass-card">
+        <h2 className="text-[14px] font-semibold text-[#B8B0C4] mb-2">Add New Reminder</h2>
         <ReminderForm />
       </div>
 
-      <div className="p-4 bg-slate-800/40 rounded-xl shadow-md border border-slate-700/50">
-          <h2 className="text-xl font-bold text-gray-300 mb-3">System Actions</h2>
-          <button onClick={handleSimulateFall} className="w-full px-5 py-2 bg-orange-700/80 text-white font-semibold rounded-lg shadow-md hover:bg-orange-700 focus:outline-none focus:ring-1 focus:ring-orange-500 text-sm">
+      <div className="p-3 rounded-xl glass-card">
+          <h2 className="text-[14px] font-semibold text-[#B8B0C4] mb-2">System Actions</h2>
+          <button onClick={handleSimulateFall} className="w-full px-4 py-2.5 bg-gradient-to-br from-[#C49868] to-[#A89060] text-white font-medium rounded-xl touch-feedback text-[14px]">
             Simulate Fall Detection
           </button>
       </div>
       
-      <div className="p-4 bg-slate-800/40 rounded-xl shadow-md border border-slate-700/50">
-        <h2 className="text-xl font-bold text-gray-300 mb-3">Patient's Daily Schedule</h2>
+      <div className="p-3 rounded-xl glass-card">
+        <h2 className="text-[14px] font-semibold text-[#B8B0C4] mb-2">Patient's Daily Schedule</h2>
         {reminders.length > 0 ? (
-             <ul className="space-y-3">
+             <ul className="space-y-2">
              {reminders.map(reminder => (
-               <li key={reminder.id} className="p-3 bg-slate-800/50 rounded-lg shadow-sm flex items-center justify-between">
-                 <div className="flex items-center">
-                    <div className={`p-2 rounded-lg mr-4 bg-slate-700 text-slate-300`}>
-                        <ReminderIcon icon={reminder.icon} className="w-6 h-6" />
+               <li key={reminder.id} className="p-2.5 rounded-xl glass-card flex items-center justify-between">
+                 <div className="flex items-center min-w-0 flex-1">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-[rgba(164,149,184,0.35)] to-[rgba(138,122,154,0.25)] mr-3 flex-shrink-0">
+                        <ReminderIcon icon={reminder.icon} className="w-5 h-5 text-[#B8B0C4]" />
                     </div>
-                    <div>
-                        <p className="font-semibold text-gray-200">{reminder.title}</p>
-                        <p className="text-sm text-slate-400">{reminder.time}</p>
+                    <div className="min-w-0">
+                        <p className="font-medium text-white text-[14px] truncate">{reminder.title}</p>
+                        <p className="text-[12px] text-[#6A6280]">{reminder.time}</p>
                     </div>
                  </div>
-                 <div className='flex items-center space-x-4'>
-                    <span className={`px-3 py-1 text-xs font-bold rounded-full ${reminder.completed ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
+                 <div className='flex items-center space-x-3 flex-shrink-0'>
+                    <span className={`px-2 py-1 text-[10px] font-semibold rounded-full ${reminder.completed ? 'bg-[rgba(184,160,120,0.25)] text-[#B8A078]' : 'bg-[rgba(212,168,120,0.25)] text-[#D4A878]'}`}>
                         {reminder.completed ? 'COMPLETED' : 'PENDING'}
                     </span>
-                    <button onClick={() => deleteReminder(reminder.id)} className="text-slate-500 hover:text-red-400 transition-colors text-2xl font-bold">&times;</button>
+                    <button onClick={() => deleteReminder(reminder.id)} className="text-[#6A6280] hover:text-[#D45A5A] transition-colors text-xl font-bold">&times;</button>
                  </div>
                </li>
              ))}
            </ul>
         ) : (
-            <p className="text-slate-500 text-center py-4">No reminders scheduled for today.</p>
+            <p className="text-[#6A6280] text-center py-3 text-[13px]">No reminders scheduled for today.</p>
         )}
       </div>
     </div>

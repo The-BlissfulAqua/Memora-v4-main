@@ -14,7 +14,6 @@ const SOSSlider: React.FC<SOSSliderProps> = ({ onActivate }) => {
   const handleDragStart = (clientX: number) => {
     if (!sliderRef.current) return;
     setIsDragging(true);
-    // Calculate the starting mouse position relative to the thumb itself
     const thumbRect = thumbRef.current?.getBoundingClientRect();
     startXRef.current = clientX - (thumbRect?.left || 0);
   };
@@ -22,9 +21,7 @@ const SOSSlider: React.FC<SOSSliderProps> = ({ onActivate }) => {
   const handleDragMove = (clientX: number) => {
     if (!isDragging || !sliderRef.current) return;
     const sliderRect = sliderRef.current.getBoundingClientRect();
-    // The new position is the current mouse position minus the slider's starting edge and the initial offset within the thumb
     const newX = clientX - sliderRect.left - startXRef.current;
-    
     const endPosition = sliderRect.width - (thumbRef.current?.clientWidth || 0);
     const clampedX = Math.max(0, Math.min(newX, endPosition));
     setThumbPosition(clampedX);
@@ -41,70 +38,84 @@ const SOSSlider: React.FC<SOSSliderProps> = ({ onActivate }) => {
     if (thumbPosition + thumbWidth > activationThreshold) {
       onActivate();
     }
-    
-    // Reset thumb position with transition
+
     setThumbPosition(0);
   };
-  
-  // Mouse Events
+
   const onMouseDown = (e: MouseEvent<HTMLDivElement>) => handleDragStart(e.clientX);
   const onMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-      // We listen on the parent, but only if dragging has started
-      if (isDragging) {
-        handleDragMove(e.clientX);
-      }
-  }
+    if (isDragging) handleDragMove(e.clientX);
+  };
   const onMouseUp = () => {
-      if (isDragging) {
-          handleDragEnd();
-      }
-  }
+    if (isDragging) handleDragEnd();
+  };
   const onMouseLeave = () => {
-      if (isDragging) {
-          handleDragEnd();
-      }
-  }
+    if (isDragging) handleDragEnd();
+  };
 
-  // Touch Events
   const onTouchStart = (e: TouchEvent<HTMLDivElement>) => handleDragStart(e.touches[0].clientX);
   const onTouchMove = (e: TouchEvent<HTMLDivElement>) => {
-      if (isDragging) {
-        handleDragMove(e.touches[0].clientX);
-      }
-  }
+    if (isDragging) handleDragMove(e.touches[0].clientX);
+  };
   const onTouchEnd = () => {
-      if (isDragging) {
-        handleDragEnd();
-      }
-  }
+    if (isDragging) handleDragEnd();
+  };
 
   return (
-    <div 
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-50"
-        // Move listeners to the full-page container to catch mouse movements outside the slider
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseLeave}
-        onMouseMove={onMouseMove}
-        onTouchEnd={onTouchEnd}
-        onTouchCancel={onTouchEnd}
-        onTouchMove={onTouchMove}
+    <div
+      className="fixed bottom-5 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[388px] z-50"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseLeave}
+      onMouseMove={onMouseMove}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
+      onTouchMove={onTouchMove}
     >
-      <div 
+      <div
         ref={sliderRef}
-        className="relative w-full h-16 bg-red-900/50 border border-red-700/80 rounded-full flex items-center p-2 shadow-2xl backdrop-blur-sm overflow-hidden"
+        className="relative w-full h-16 rounded-[28px] flex items-center p-1.5 overflow-hidden"
+        style={{
+          background: 'rgba(224, 122, 122, 0.12)',
+          border: '1px solid rgba(224, 122, 122, 0.25)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
       >
-        <div 
+        <div
           ref={thumbRef}
-          className="absolute h-12 w-12 bg-red-600 rounded-full flex items-center justify-center cursor-pointer select-none shadow-lg z-10"
-          style={{ transform: `translateX(${thumbPosition}px)`, transition: isDragging ? 'none' : 'transform 0.3s ease' }}
+          className="absolute h-[52px] w-[52px] rounded-full flex items-center justify-center cursor-pointer select-none z-10"
+          style={{
+            background: 'linear-gradient(135deg, #E07A7A, #C87070)',
+            boxShadow: '0 4px 20px rgba(224, 122, 122, 0.35)',
+            transform: `translateX(${thumbPosition}px)`,
+            transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
           onMouseDown={onMouseDown}
           onTouchStart={onTouchStart}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M9 5l7 7-7 7" />
           </svg>
         </div>
-        <div className="flex-grow text-center text-red-200 font-bold text-lg animate-pulse pl-12 pointer-events-none">
+        <div
+          className="flex-grow text-center font-body text-[13px] font-medium pointer-events-none"
+          style={{
+            color: '#E07A7A',
+            letterSpacing: '1.5px',
+            paddingLeft: '52px',
+            animation: 'textPulse 2.5s ease-in-out infinite',
+          }}
+        >
           SLIDE FOR SOS
         </div>
       </div>

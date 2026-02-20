@@ -101,11 +101,11 @@ const AcknowledgeModal: React.FC<{ alertId: string; alertType: 'SOS' | 'FALL'; o
         aria-modal="true"
         aria-labelledby="alert-title"
         aria-describedby="alert-description"
-        className="relative bg-slate-900 rounded-xl shadow-2xl w-full max-w-sm p-6 border border-slate-700" 
+        className="relative glass-card rounded-2xl shadow-2xl w-full max-w-sm p-6 border border-[rgba(255,255,255,0.06)]" 
         style={{ zIndex: 99999 }}
       >
-        <h3 id="alert-title" className="text-lg font-bold mb-2">Important Alert</h3>
-        <p id="alert-description" className="text-sm text-slate-300 mb-4">
+        <h3 id="alert-title" className="font-display text-lg font-semibold text-[#F5F0E8] mb-2">Important Alert</h3>
+        <p id="alert-description" className="text-sm text-[#A8A0B4] mb-4">
           A critical {alertType === 'SOS' ? 'SOS' : 'Fall'} alert is active. Please acknowledge to stop the alarm.
         </p>
         <div className="flex justify-end gap-2">
@@ -114,7 +114,7 @@ const AcknowledgeModal: React.FC<{ alertId: string; alertType: 'SOS' | 'FALL'; o
             id={`acknowledge-${alertId}`}
             name={`acknowledge-${alertType.toLowerCase()}-alert`}
             aria-label={`Acknowledge ${alertType} alert`}
-            className="px-4 py-2 bg-red-600 rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+            className="px-5 py-2.5 bg-gradient-to-br from-[#E07A7A] to-[#C87070] rounded-xl text-white font-medium touch-feedback"
           >
             Acknowledge
           </button>
@@ -123,7 +123,7 @@ const AcknowledgeModal: React.FC<{ alertId: string; alertType: 'SOS' | 'FALL'; o
             id={`close-${alertId}`}
             name="close-alert-modal"
             aria-label="Close alert modal"
-            className="px-4 py-2 bg-slate-700 rounded hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+            className="px-5 py-2.5 glass-card rounded-xl text-[#A8A0B4] font-medium touch-feedback"
           >
             Close
           </button>

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { getAICompanionChatResponse, isGeminiConfigured, missingApiKeyError } from '../../services/geminiService';
 import MicrophoneIcon from '../icons/MicrophoneIcon';
 import voskSpeechService from '../../services/voskSpeechService';
+import { useAppContext } from '../../context/AppContext';
 
 interface SpeechRecognitionEventLike {
   resultIndex: number;
@@ -265,6 +266,8 @@ const createFallbackDiagnostics = (reasonMessage: string, recommendedAction: str
 });
 
 const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
+  const { state } = useAppContext();
+  const devMode = state.devMode;
   const [messages, setMessages] = useState<Message[]>(() => [
     { sender: 'ai', text: isGeminiConfigured ? "Hello! I'm Digi, your friendly companion. How are you feeling today?" : missingApiKeyError }
   ]);
@@ -1015,19 +1018,18 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
   }, [diagnosticsPayload]);
 
   return (
-    <div className="relative p-4 sm:p-6 bg-slate-900/70 backdrop-blur-xl border border-slate-700/50 rounded-3xl shadow-2xl h-[95vh] overflow-hidden flex flex-col">
-      <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-slate-700"></div>
-      <div className="absolute bottom-3 right-3 w-2 h-2 rounded-full bg-slate-700"></div>
-
-      <header className="flex items-center justify-between pb-4 border-b border-slate-700/50">
+    <div className="relative p-4 sm:p-6 h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-hidden flex flex-col glass-card rounded-3xl">
+      <header className="flex items-center justify-between pb-4 mb-4 border-b border-[rgba(255,255,255,0.06)]">
         <div className="flex items-center">
-          <button onClick={onBack} className="text-slate-400 text-sm p-2 rounded-full hover:bg-slate-800/50 transition-colors mr-2 flex items-center gap-1">
+          <button onClick={onBack} className="text-[#A8A0B4] text-sm p-2 rounded-xl touch-feedback flex items-center gap-1">
             <span className="text-lg">&larr;</span> Back
           </button>
-          <div className="text-2xl mr-3">❤️</div>
-          <div>
-            <h2 className="text-xl font-bold text-white">Your Companion, Digi</h2>
-            <p className={`text-sm font-semibold ${isGeminiConfigured ? 'text-green-400' : 'text-yellow-400'}`}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#E8C4A0] to-[#C9B896] ml-2 text-xl">
+            ❤️
+          </div>
+          <div className="ml-3">
+            <h2 className="font-display text-xl font-semibold text-[#F5F0E8]">Your Companion, Digi</h2>
+            <p className={`text-xs font-medium ${isGeminiConfigured ? 'text-[#C9B896]' : 'text-[#E8C4A0]'}`}>
               {isGeminiConfigured ? 'Online' : 'Limited'}
             </p>
           </div>
@@ -1039,8 +1041,10 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
           {messages.map((msg, index) => (
             <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-xs lg:max-w-md px-4 py-3 rounded-xl shadow-md ${
-                  msg.sender === 'user' ? 'bg-slate-700 text-white' : 'bg-slate-800 text-gray-300'
+                className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-md ${
+                  msg.sender === 'user' 
+                    ? 'bg-gradient-to-br from-[rgba(184,169,201,0.4)] to-[rgba(157,138,165,0.3)] text-[#F5F0E8]' 
+                    : 'glass-card text-[#A8A0B4]'
                 }`}
               >
                 {msg.text}
@@ -1049,11 +1053,11 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-slate-800 rounded-xl p-3 shadow-md">
+              <div className="glass-card rounded-2xl p-3">
                 <div className="flex items-center space-x-1">
-                  <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                  <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                  <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce"></span>
+                  <span className="h-2 w-2 bg-[#B8A9C9] rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                  <span className="h-2 w-2 bg-[#B8A9C9] rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                  <span className="h-2 w-2 bg-[#B8A9C9] rounded-full animate-bounce"></span>
                 </div>
               </div>
             </div>
@@ -1062,25 +1066,25 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
         </div>
       </div>
 
-      <div className="mt-auto flex items-center border-t border-slate-700/50 pt-4 gap-2">
+      <div className="mt-auto flex items-center border-t border-[rgba(255,255,255,0.06)] pt-4 gap-2">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder={isListening ? 'Listening...' : 'Type a message...'}
-          className="flex-grow px-4 py-3 bg-slate-800/70 border border-slate-700 rounded-full text-white placeholder-slate-400 focus:outline-none focus:border-slate-600 focus:ring-1 focus:ring-slate-600 transition-colors disabled:bg-slate-800/40 disabled:cursor-not-allowed"
+          className="flex-grow px-4 py-3 bg-[rgba(45,36,56,0.5)] border border-[rgba(255,255,255,0.06)] rounded-full text-[#F5F0E8] placeholder-[#7A7582] focus:outline-none focus:border-[rgba(184,169,201,0.3)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={isLoading || !isGeminiConfigured}
         />
         <button
           type="button"
           onClick={handleListen}
           disabled={isLoading || isVoiceSelfTesting || !isGeminiConfigured || voiceMode === 'unsupported'}
-          className={`flex-shrink-0 w-12 h-12 rounded-full transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+          className={`flex-shrink-0 w-12 h-12 rounded-full transition-all duration-200 flex items-center justify-center focus:outline-none touch-feedback ${
             isListening
-              ? 'bg-red-600 text-white animate-pulse focus:ring-red-500'
-              : 'bg-slate-700 text-slate-300 hover:bg-slate-600 focus:ring-slate-500'
-          } disabled:bg-slate-800/40 disabled:cursor-not-allowed`}
+              ? 'bg-[#E07A7A] text-white animate-pulse shadow-[0_4px_20px_rgba(224,122,122,0.4)]'
+              : 'glass-card text-[#B8A9C9]'
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
           aria-label={isListening ? 'Stop listening' : 'Start listening'}
           title={voiceMode === 'native' ? 'Start native speech recognition' : 'Start browser speech recognition'}
         >
@@ -1090,7 +1094,7 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
           type="button"
           onClick={handleSend}
           disabled={isLoading || isVoiceSelfTesting || input.trim() === '' || !isGeminiConfigured}
-          className="flex-shrink-0 w-12 h-12 bg-slate-700 text-white font-bold rounded-full disabled:bg-slate-800/40 disabled:cursor-not-allowed hover:bg-slate-600 transition-colors flex items-center justify-center"
+          className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#B8A9C9] to-[#9D8AA5] text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed touch-feedback flex items-center justify-center"
           aria-label="Send message"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg>
@@ -1098,49 +1102,53 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
       </div>
 
       {speechError && (
-        <p className="mt-2 text-sm text-amber-300">{speechError}</p>
+        <p className="mt-2 text-sm text-[#E8C4A0]">{speechError}</p>
       )}
 
-      <button
-        type="button"
-        onClick={handleRunVoiceSelfTest}
-        disabled={isLoading || isListening || isVoiceSelfTesting}
-        className="mt-2 text-left text-xs text-slate-300 underline underline-offset-2 hover:text-white disabled:text-slate-500 disabled:no-underline"
-      >
-        {isVoiceSelfTesting ? 'Running voice self-test...' : 'Run voice self-test'}
-      </button>
-
-      {voiceSelfTestMessage && (
-        <p className="mt-1 text-xs text-cyan-300">{voiceSelfTestMessage}</p>
-      )}
-      {copyDiagnosticsMessage && (
-        <p className="mt-1 text-xs text-cyan-300">{copyDiagnosticsMessage}</p>
+      {devMode && (
+        <button
+          type="button"
+          onClick={handleRunVoiceSelfTest}
+          disabled={isLoading || isListening || isVoiceSelfTesting}
+          className="mt-2 text-left text-xs text-[#A8A0B4] underline underline-offset-2 hover:text-[#F5F0E8] disabled:text-[#7A7582] disabled:no-underline"
+        >
+          {isVoiceSelfTesting ? 'Running voice self-test...' : 'Run voice self-test'}
+        </button>
       )}
 
-      <p className="mt-2 text-xs text-slate-400">
-        Voice mode: {voiceMode === 'native' ? 'Native speech recognition' : voiceMode === 'speech' ? 'Browser speech recognition' : 'Unavailable (text only)'}
-      </p>
+      {devMode && voiceSelfTestMessage && (
+        <p className="mt-1 text-xs text-[#B8A9C9]">{voiceSelfTestMessage}</p>
+      )}
+      {devMode && copyDiagnosticsMessage && (
+        <p className="mt-1 text-xs text-[#B8A9C9]">{copyDiagnosticsMessage}</p>
+      )}
 
-      {voiceDiagnostics && (
-        <details open className="mt-1 rounded-lg border border-slate-700/70 bg-slate-900/50 p-2">
-          <summary className="cursor-pointer select-none text-xs text-slate-200">Diagnostics</summary>
-          <p className="text-xs text-slate-300">
+      {devMode && (
+        <p className="mt-2 text-xs text-[#7A7582]">
+          Voice mode: {voiceMode === 'native' ? 'Native speech recognition' : voiceMode === 'speech' ? 'Browser speech recognition' : 'Unavailable (text only)'}
+        </p>
+      )}
+
+      {devMode && voiceDiagnostics && (
+        <details open className="mt-1 rounded-xl glass-card p-3">
+          <summary className="cursor-pointer select-none text-xs text-[#F5F0E8]">Diagnostics</summary>
+          <p className="text-xs text-[#A8A0B4]">
             Voice status: {voiceDiagnostics.engine === 'native' ? 'native' : voiceDiagnostics.engine === 'web-speech' ? 'web-speech' : 'text-only'} ({voiceDiagnostics.reasonCode})
           </p>
           {voiceDiagnostics.reasonCode !== 'ok' && (
-            <p className="mt-1 text-xs text-amber-300">
+            <p className="mt-1 text-xs text-[#E8C4A0]">
               {voiceDiagnostics.reasonMessage} {voiceDiagnostics.recommendedAction}
             </p>
           )}
           <button
             type="button"
             onClick={handleCopyDiagnostics}
-            className="mt-2 rounded bg-slate-800 px-2 py-1 text-[10px] text-slate-200 hover:bg-slate-700"
+            className="mt-2 rounded-lg bg-[rgba(45,36,56,0.5)] px-3 py-1.5 text-[10px] text-[#F5F0E8] hover:bg-[rgba(45,36,56,0.7)] transition-colors"
           >
             Copy diagnostics
           </button>
           <textarea
-            className="mt-2 h-16 w-full resize-none rounded bg-slate-950/80 p-2 text-[10px] text-slate-400"
+            className="mt-2 h-16 w-full resize-none rounded-lg bg-[rgba(26,20,35,0.8)] p-2 text-[10px] text-[#A8A0B4] border border-[rgba(255,255,255,0.06)]"
             readOnly
             value={diagnosticsPayload}
             aria-label="Voice diagnostics"

@@ -252,24 +252,24 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onNewMessage, disabled = 
       <button
         onClick={handleButtonClick}
         disabled={disabled && !isRecording}
-        className={`flex-shrink-0 w-16 h-16 rounded-full transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+        className={`flex-shrink-0 w-16 h-16 rounded-full transition-all duration-200 flex items-center justify-center focus:outline-none touch-feedback ${
             isRecording 
-            ? 'bg-red-600 text-white animate-pulse focus:ring-red-500' 
+            ? 'bg-gradient-to-br from-[#E07A7A] to-[#C87070] text-white animate-pulse shadow-[0_4px_20px_rgba(224,122,122,0.4)]' 
             : (disabled 
-                ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600 focus:ring-slate-500')
+                ? 'glass-card text-[#7A7582] cursor-not-allowed opacity-50'
+                : 'bg-gradient-to-br from-[#9A8BB5] to-[#7A6A9A] text-white')
         }`}
         aria-label={isRecording ? 'Stop recording' : (disabled ? 'Enter your name to record' : 'Start recording')}
       >
         <MicrophoneIcon className="w-8 h-8" />
       </button>
       {isRecording && (
-        <div className="text-xl font-mono bg-slate-800/50 px-4 py-2 rounded-lg text-white">
+        <div className="text-xl font-mono glass-card px-4 py-2 rounded-xl text-[#F5F0E8]">
           {formatTime(recordingTime)}
         </div>
       )}
       {!isRecording && isNativeMode && (
-        <span className="text-xs text-slate-500">Native</span>
+        <span className="text-xs text-[#7A7582]">Native</span>
       )}
     </div>
   );

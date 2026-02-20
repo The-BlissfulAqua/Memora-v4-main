@@ -31,7 +31,6 @@ const ReminderForm: React.FC = () => {
         };
 
         dispatch({ type: 'ADD_REMINDER', payload: newReminder });
-        // No creation-time scheduling: rely on in-app timers to fire notification/audio at the scheduled time
         setTitle('');
         setTime('');
         setIcon('medication');
@@ -45,28 +44,28 @@ const ReminderForm: React.FC = () => {
                     placeholder="Reminder Title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                    className="w-full px-4 py-3 bg-[rgba(45,36,56,0.5)] border border-[rgba(255,255,255,0.06)] rounded-xl text-[#F5F0E8] placeholder-[#7A7582] focus:outline-none focus:border-[rgba(184,169,201,0.3)]"
                 />
                 <input
                     type="time"
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                    className="w-full px-4 py-3 bg-[rgba(45,36,56,0.5)] border border-[rgba(255,255,255,0.06)] rounded-xl text-[#F5F0E8] placeholder-[#7A7582] focus:outline-none focus:border-[rgba(184,169,201,0.3)]"
                 />
             </div>
 
             <div className="flex items-center justify-between">
                 <div className="flex space-x-2">
-                    <button type="button" onClick={() => setIcon('medication')} className={`p-2 rounded-lg transition-colors ${icon === 'medication' ? 'bg-slate-600 text-white' : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'}`}><PillIcon className="w-6 h-6"/></button>
-                    <button type="button" onClick={() => setIcon('meal')} className={`p-2 rounded-lg transition-colors ${icon === 'meal' ? 'bg-slate-600 text-white' : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'}`}><ForkKnifeIcon className="w-6 h-6"/></button>
-                    <button type="button" onClick={() => setIcon('hydration')} className={`p-2 rounded-lg transition-colors ${icon === 'hydration' ? 'bg-slate-600 text-white' : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'}`}><GlassWaterIcon className="w-6 h-6"/></button>
+                    <button type="button" onClick={() => setIcon('medication')} className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${icon === 'medication' ? 'bg-gradient-to-br from-[#B8A9C9] to-[#9D8AA5] text-white' : 'glass-card text-[#A8A0B4]'}`}><PillIcon className="w-6 h-6"/></button>
+                    <button type="button" onClick={() => setIcon('meal')} className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${icon === 'meal' ? 'bg-gradient-to-br from-[#E8C4A0] to-[#C9B896] text-white' : 'glass-card text-[#A8A0B4]'}`}><ForkKnifeIcon className="w-6 h-6"/></button>
+                    <button type="button" onClick={() => setIcon('hydration')} className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${icon === 'hydration' ? 'bg-gradient-to-br from-[#B8A9C9] to-[#9D8AA5] text-white' : 'glass-card text-[#A8A0B4]'}`}><GlassWaterIcon className="w-6 h-6"/></button>
                 </div>
-                <button type="submit" className="px-6 py-2 bg-slate-700 text-white font-semibold rounded-lg shadow-md hover:bg-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-500">
+                <button type="submit" className="px-6 py-3 bg-gradient-to-br from-[#B8A9C9] to-[#9D8AA5] text-white font-medium rounded-xl touch-feedback">
                     Add
                 </button>
             </div>
         </form>
     );
-}
+};
 
 export default ReminderForm;

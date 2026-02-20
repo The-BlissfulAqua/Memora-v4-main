@@ -368,16 +368,15 @@ const App: React.FC = () => {
   }, [state.alerts, state.currentUser, showAckForAlertId]);
 
   return (
-    // The main background is now on the body tag in index.html
-    <div className="min-h-screen font-sans antialiased text-gray-300"> 
+    <div className="min-h-screen font-body antialiased text-[#A8A0B4] relative z-10">
       <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
         {/* Connection status dot */}
-        <div className={`w-3 h-3 rounded-full ${realtimeDotClass(state.currentUser)} ${state.devMode ? 'ring-2 ring-yellow-400' : ''}`} title={state.currentUser ? 'Connected' : 'Not connected'} />
+        <div className={`w-3 h-3 rounded-full ${realtimeDotClass(state.currentUser)} ${state.devMode ? 'ring-2 ring-[#E8C4A0]' : ''}`} title={state.currentUser ? 'Connected' : 'Not connected'} />
         {/* Use the full LoginPage modal (opened via openLoginModal) for demo login UX */}
         {canShowMasterSwitch && (
           <button
             onClick={handleSwitchView}
-            className="px-3 py-1 bg-slate-800/80 border border-slate-700 text-xs text-gray-300 rounded-full shadow-sm hover:bg-slate-700/90 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-slate-500"
+            className="px-4 py-2 glass-card text-xs text-[#A8A0B4] rounded-full touch-feedback"
           >
             {getNextViewName()}
           </button>
@@ -386,7 +385,6 @@ const App: React.FC = () => {
       {showLogin && <LoginPage onClose={() => setShowLogin(false)} />}
 
       {showAckForAlertId && (() => {
-        // Only show the acknowledge modal to caregiver or family dashboard views.
         const a = state.alerts.find(x => x.id === showAckForAlertId);
         if (!a) return null;
         const viewRole = state.currentView === 'CAREGIVER' ? 'CAREGIVER' : state.currentView === 'FAMILY' ? 'FAMILY' : 'PATIENT';
@@ -414,7 +412,7 @@ const App: React.FC = () => {
         return null;
       })()}
       
-      <div className="container mx-auto max-w-lg p-2 sm:p-4">
+      <div className="container mx-auto max-w-lg p-2 sm:p-4 h-screen">
         {renderView()}
       </div>
       <ToastViewport />

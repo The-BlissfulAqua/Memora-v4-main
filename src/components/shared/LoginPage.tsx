@@ -131,42 +131,41 @@ const LoginPage: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
           role="dialog"
           aria-modal="true"
           aria-labelledby="login-modal-title"
-          className="relative bg-slate-900 rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-700"
+          className="relative glass-card rounded-2xl shadow-2xl w-full max-w-md p-6 border border-[rgba(255,255,255,0.06)]"
           style={{ zIndex: 99999 }}
         >
-          <button onClick={close} className="absolute top-3 right-3 text-slate-400 hover:text-white" aria-label="Close login dialog">X</button>
-          <h2 className="text-lg font-bold mb-4">Demo Login</h2>
-          <label className="block text-sm text-slate-300">User</label>
-          <input ref={firstInputRef} className="w-full p-2 mb-3 rounded bg-slate-800 border border-slate-700" value={username} onChange={e => setUsername(e.target.value)} />
-          <label className="block text-sm text-slate-300">Password</label>
-          <input type="password" className="w-full p-2 mb-3 rounded bg-slate-800 border border-slate-700" value={password} onChange={e => setPassword(e.target.value)} />
+          <button onClick={close} className="absolute top-4 right-4 text-[#7A7582] hover:text-[#F5F0E8] text-lg" aria-label="Close login dialog">✕</button>
+          <h2 className="font-display text-xl font-semibold text-[#F5F0E8] mb-6">Demo Login</h2>
+          <label className="block text-sm text-[#A8A0B4] mb-1">User</label>
+          <input ref={firstInputRef} className="w-full p-3 mb-4 rounded-xl bg-[rgba(45,36,56,0.5)] border border-[rgba(255,255,255,0.06)] text-[#F5F0E8] placeholder-[#7A7582] focus:outline-none focus:border-[rgba(184,169,201,0.3)]" value={username} onChange={e => setUsername(e.target.value)} />
+          <label className="block text-sm text-[#A8A0B4] mb-1">Password</label>
+          <input type="password" className="w-full p-3 mb-4 rounded-xl bg-[rgba(45,36,56,0.5)] border border-[rgba(255,255,255,0.06)] text-[#F5F0E8] placeholder-[#7A7582] focus:outline-none focus:border-[rgba(184,169,201,0.3)]" value={password} onChange={e => setPassword(e.target.value)} />
 
-          <label className="block text-sm text-slate-300">WSS URL</label>
-          <input className="w-full p-2 mb-3 rounded bg-slate-800 border border-slate-700" value={wssUrl} onChange={e => setWssUrl(e.target.value)} />
+          <label className="block text-sm text-[#A8A0B4] mb-1">WSS URL</label>
+          <input className="w-full p-3 mb-4 rounded-xl bg-[rgba(45,36,56,0.5)] border border-[rgba(255,255,255,0.06)] text-[#F5F0E8] placeholder-[#7A7582] focus:outline-none focus:border-[rgba(184,169,201,0.3)]" value={wssUrl} onChange={e => setWssUrl(e.target.value)} />
 
-          <label className="block text-sm text-slate-300">Room</label>
-          <input className="w-full p-2 mb-3 rounded bg-slate-800 border border-slate-700" value={room} onChange={e => setRoom(e.target.value)} />
+          <label className="block text-sm text-[#A8A0B4] mb-1">Room</label>
+          <input className="w-full p-3 mb-4 rounded-xl bg-[rgba(45,36,56,0.5)] border border-[rgba(255,255,255,0.06)] text-[#F5F0E8] placeholder-[#7A7582] focus:outline-none focus:border-[rgba(184,169,201,0.3)]" value={room} onChange={e => setRoom(e.target.value)} />
 
           <div className="flex items-center justify-between">
             <div>
               <button
                 onClick={() => {
-                  // Enable dev mode and auto-login as patient, then close
                   dispatch({ type: 'SET_DEV_MODE', payload: true });
                   dispatch({ type: 'LOGIN_SUCCESS', payload: { username: 'dev', role: 'PATIENT' } });
                   dispatch({ type: 'SET_VIEW_MODE', payload: ViewMode.PATIENT });
                   if (onClose) onClose();
                 }}
-                className="px-3 py-1 bg-yellow-600 rounded text-sm"
+                className="px-4 py-2 bg-gradient-to-br from-[#E8C4A0] to-[#C9B896] text-white font-medium rounded-xl text-sm touch-feedback"
               >
                 Dev Mode
               </button>
             </div>
             <div>
-              <button onClick={connect} className="px-4 py-2 bg-slate-700 rounded" disabled={connecting}>
+              <button onClick={connect} className="px-5 py-2.5 bg-gradient-to-br from-[#B8A9C9] to-[#9D8AA5] text-white font-medium rounded-xl touch-feedback" disabled={connecting}>
                 {connecting ? 'Connecting...' : 'Connect'}
               </button>
-              {error && <div className="text-sm text-red-400 mt-2">{error}</div>}
+              {error && <div className="text-sm text-[#E07A7A] mt-2">{error}</div>}
             </div>
           </div>
         </div>

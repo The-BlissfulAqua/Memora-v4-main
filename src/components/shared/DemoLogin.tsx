@@ -54,24 +54,24 @@ const DemoLogin: React.FC = () => {
   };
 
   return (
-    <div className="relative p-2 bg-slate-900/60 rounded-md border border-slate-700/50">
+    <div className="relative p-3 glass-card rounded-xl">
       <div className="flex gap-2 items-center">
-        <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-400' : 'bg-red-500'}`} title={connected ? 'Connected' : 'Disconnected'} />
-        <input className="input" value={url} onChange={e => setUrl(e.target.value)} placeholder="ws://server:8081" />
-        <input className="input" value={username} onChange={e => setUsername(e.target.value)} placeholder="username" />
-        <select className="input" value={role} onChange={e => setRole(e.target.value)}>
+        <div className={`w-3 h-3 rounded-full ${connected ? 'bg-[#C9B896]' : 'bg-[#E07A7A]'}`} title={connected ? 'Connected' : 'Disconnected'} />
+        <input className="px-3 py-2 bg-[rgba(45,36,56,0.5)] border border-[rgba(255,255,255,0.06)] rounded-lg text-[#F5F0E8] placeholder-[#7A7582] text-sm focus:outline-none focus:border-[rgba(184,169,201,0.3)]" value={url} onChange={e => setUrl(e.target.value)} placeholder="ws://server:8081" />
+        <input className="px-3 py-2 bg-[rgba(45,36,56,0.5)] border border-[rgba(255,255,255,0.06)] rounded-lg text-[#F5F0E8] placeholder-[#7A7582] text-sm focus:outline-none focus:border-[rgba(184,169,201,0.3)]" value={username} onChange={e => setUsername(e.target.value)} placeholder="username" />
+        <select className="px-3 py-2 bg-[rgba(45,36,56,0.5)] border border-[rgba(255,255,255,0.06)] rounded-lg text-[#F5F0E8] text-sm focus:outline-none focus:border-[rgba(184,169,201,0.3)]" value={role} onChange={e => setRole(e.target.value)}>
           <option value="PATIENT">Patient</option>
           <option value="CAREGIVER">Caregiver</option>
           <option value="FAMILY">Family</option>
         </select>
-        <input className="input" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" />
+        <input className="px-3 py-2 bg-[rgba(45,36,56,0.5)] border border-[rgba(255,255,255,0.06)] rounded-lg text-[#F5F0E8] placeholder-[#7A7582] text-sm focus:outline-none focus:border-[rgba(184,169,201,0.3)]" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" />
         {!connected ? (
-          <button className="btn" onClick={handleConnect}>Connect</button>
+          <button className="px-4 py-2 bg-gradient-to-br from-[#B8A9C9] to-[#9D8AA5] text-white font-medium rounded-lg text-sm touch-feedback" onClick={handleConnect}>Connect</button>
         ) : (
-          <button className="btn" onClick={handleDisconnect}>Disconnect</button>
+          <button className="px-4 py-2 bg-gradient-to-br from-[#E07A7A] to-[#C87070] text-white font-medium rounded-lg text-sm touch-feedback" onClick={handleDisconnect}>Disconnect</button>
         )}
       </div>
-      <button onClick={toggleDevMode} className="absolute top-1 right-1 text-xs px-2 py-1 rounded bg-slate-800/70">Dev</button>
+      <button onClick={toggleDevMode} className="absolute top-2 right-2 text-xs px-3 py-1.5 rounded-lg glass-card text-[#A8A0B4] touch-feedback">Dev</button>
       {showSelector && <DashboardSelectorModal onClose={() => setShowSelector(false)} />}
     </div>
   );

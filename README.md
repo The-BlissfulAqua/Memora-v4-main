@@ -1,399 +1,276 @@
 # Memora: AI Dementia Companion
 
-An AI and AR-powered companion application designed to provide comprehensive support for dementia patients, their caregivers, and their families. Memora aims to enhance the daily lives of patients by providing tools for navigation, reminders, and cognitive engagement, while keeping caregivers and family members connected and informed.
+<p align="center">
+  <strong>An award-winning AI, AR, and realtime care companion for dementia patients, caregivers, and families.</strong>
+</p>
 
-## ✨ Features
+<p align="center">
+  <img alt="React" src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=111" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=fff" />
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-7-646CFF?style=for-the-badge&logo=vite&logoColor=fff" />
+  <img alt="Capacitor" src="https://img.shields.io/badge/Capacitor-Android-119EFF?style=for-the-badge&logo=capacitor&logoColor=fff" />
+  <img alt="Groq" src="https://img.shields.io/badge/Groq-AI-F55036?style=for-the-badge&logoColor=fff" />
+</p>
 
-Memora is a single application with three distinct views, each tailored to a specific user.
+---
 
-### 🧑‍⚕️ Patient View
-The primary interface for the person with dementia, designed for simplicity and ease of use.
-- **Robust AR Home Navigation:** A rebuilt navigation system using the phone's camera and motion sensors. It features a compass calibration step, a stabilized AR arrow that correctly points to the destination relative to the real world, and automatic step detection.
-- **AI Companion ("Digi"):** A friendly, voice-enabled AI chatbot for conversation and emotional support, powered by the Gemini API.
-- **Daily Reminders:** Simple, icon-driven reminders for medications, meals, and hydration.
-- **Cognitive Games:** A simple memory matching game to provide gentle mental stimulation.
-- **Memory Album:** A visual album of photos and captions shared by family members.
-- **Voice Messages:** A simple way to send and receive voice notes from family and caregivers.
-- **Emergency SOS:** A large, prominent slider to alert caregivers and family in case of an emergency, designed to prevent accidental presses.
-- **Fall Detection:** Automatically detects potential falls using the phone's accelerometer and sends an alert.
+## Project Snapshot
 
-### ดูแล Caregiver View
-A dashboard for professional caregivers to manage the patient's daily routine and monitor their well-being.
-- **Alerts Dashboard:** Displays urgent alerts for SOS button presses and falls.
-- **Schedule Management:** Add, view, and delete daily reminders for the patient.
-- **Voice Mailbox:** Send and review voice messages with the patient and family.
+**Memora** is a full-stack prototype built for one of healthcare's most human problems: helping people living with dementia stay safer, calmer, and more connected while giving caregivers and family members timely context.
 
-### 👨‍👩‍👧 Family View
-A portal for family members to stay connected and involved in their loved one's care.
-- **Activity Timeline:** A real-time log of patient activities, such as completed reminders and shared memories.
-- **Share Memories:** Easily upload photos and captions to the patient's Memory Album.
-- **Send Comforting Thoughts:** Use AI to generate and send a short, uplifting quote to the patient's home screen, or write a personal one.
-- **Voice Messages:** Share voice notes to stay connected personally.
-- **View Schedule & Alerts:** Stay informed about the patient's daily plan and any urgent alerts.
+The app combines a simplified patient interface, sensor-based safety features, an AI companion, voice messaging, realtime dashboards, memory sharing, and AR-assisted indoor navigation into one coordinated experience.
 
-## 🧭 How AR Navigation Works
+| Built For | What It Solves |
+| --- | --- |
+| Patients | Gentle reminders, companionship, memory support, safe navigation, emergency help |
+| Caregivers | Daily schedule management, SOS/fall alerts, realtime visibility, voice communication |
+| Family | Emotional connection, memory sharing, comforting AI-assisted messages, activity awareness |
 
-The AR navigation system has been re-architected for accuracy and reliability.
+## Awards & Recognition
 
-1.  **Permissions & Calibration:** The user is first prompted to grant camera and motion sensor permissions. Then, a mandatory calibration screen guides the user to rotate their device, which helps stabilize the magnetometer (compass) for an accurate heading.
-2.  **Sensor Fusion & Smoothing:** The app uses a custom `useDeviceSensors` hook that reads from the `deviceorientation` API. To prevent a jittery arrow, it applies a moving average filter to the raw compass heading, providing a smooth but responsive orientation.
-3.  **Pedestrian Dead Reckoning (PDR):** Instead of manual buttons, the system uses the device's accelerometer (`devicemotion`) to automatically detect steps. A peak-detection algorithm with a lockout period ensures that steps are counted accurately.
-4.  **Accurate Arrow Pointing:** The core of the system is its arrow logic. The arrow's on-screen rotation is calculated with the formula `relativeBearing = normalizeAngle(destinationBearing - deviceHeading)`. This ensures the arrow visually **rotates with the device**, while its direction always **points to the destination's real-world bearing**.
-5.  **Developer Mode & Testing:** A "Dev Mode" toggle is available within the AR view. This enables a debug overlay showing live sensor data. It also allows developers to manually set a simulated device heading to easily test navigation logic, such as the "296° case" outlined below.
+<table>
+  <tr>
+    <td width="42%">
+      <img src="./HAL.jpeg" alt="HAL award won by the Memora team" />
+    </td>
+    <td>
+      <h3>2nd Place - National Level Hackathon</h3>
+      <p><strong>Organised by Global Academy of Technology</strong></p>
+      <p>Recognized for building a practical AI-assisted care companion focused on dementia support, safety, and family connection.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="42%">
+      <img src="./SAI%20RAM%20COLLEGE.jpeg" alt="Sai Ram College award won by the Memora team" />
+    </td>
+    <td>
+      <h3>3rd Place - National Level Hackathon</h3>
+      <p><strong>Organised by Sai Ram College of Engineering</strong></p>
+      <p>Awarded for a multi-role healthcare prototype combining patient UX, caregiver coordination, AI support, and realtime alerts.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="42%">
+      <img src="./CMR.jpeg" alt="CMR University Tech-Expo award won by the Memora team" />
+    </td>
+    <td>
+      <h3>2nd Place - National Level Tech-Expo</h3>
+      <p><strong>Organised by CMR University</strong></p>
+      <p>Presented as a working product concept with mobile sensors, AR navigation, and connected dashboards for dementia care.</p>
+    </td>
+  </tr>
+</table>
 
-### Testing the "296° Case"
-1.  Navigate to the AR feature on a mobile device.
-2.  Enable the "Dev Mode" toggle in the header.
-3.  The debug overlay will appear. The destination bearing (`B_dest`) is hardcoded to **296°**.
-4.  Use the slider in the debug overlay to set the simulated heading (`H_device`) to **296°**.
-5.  **Observe:** The `relative` bearing should be `0°`, and the arrow on screen should point straight up.
-6.  Change the simulated heading to **206°**.
-7.  **Observe:** The `relative` bearing should be `90°`, and the arrow on screen should point directly to the right.
+## Why This Project Stands Out
 
-## 🛠️ Tech Stack
+- **Real user empathy:** the patient experience is intentionally simple, icon-driven, and low-friction for users who may be disoriented or anxious.
+- **Multimodal product thinking:** combines AI chat, speech, audio recording, camera access, motion sensors, notifications, and realtime sync.
+- **Safety-oriented UX:** SOS uses a slider to reduce accidental triggers, while fall detection and urgent alerts notify caregiver/family dashboards.
+- **Mobile-first engineering:** designed for physical device testing with camera, microphone, accelerometer, gyroscope, local notifications, and Android packaging through Capacitor.
+- **Presentation-ready demo system:** includes a lightweight WebSocket relay server for multi-device demos across Patient, Caregiver, and Family views.
 
-- **Frontend:** React, TypeScript, Tailwind CSS
-- **AI/ML:**
-    - Google Gemini API (`@google/genai`) for the AI companion and quote generation.
-- **Web APIs:**
-    - `getUserMedia` (Camera API)
-    - `DeviceOrientationEvent` & `DeviceMotionEvent` (Motion Sensors)
-    - `SpeechRecognition` (Voice Input)
-    - `MediaRecorder` (Audio Recording)
+## Core Experience
 
-### Performance & Data Handling Notes
-- **Audio:** To ensure performance and avoid bloating memory, audio data is handled using `Blob` objects and `URL.createObjectURL()`. **Base64 encoding is explicitly avoided for audio data** as it is inefficient. This approach is used for both recording and playback of voice messages.
+```mermaid
+flowchart LR
+  Patient[Patient App] -->|SOS / fall / reminders| Realtime[Demo WebSocket Relay]
+  Caregiver[Caregiver Dashboard] -->|schedule + voice notes| Realtime
+  Family[Family Portal] -->|memories + quotes + voice notes| Realtime
+  Realtime --> Patient
+  Realtime --> Caregiver
+  Realtime --> Family
+  Groq[Groq API] -->|AI companion + comforting quotes| Patient
+  Groq --> Family
+  Sensors[Camera + motion sensors] -->|AR navigation + fall detection| Patient
+```
 
-## 🚀 Getting Started
+## Feature Highlights
 
-Follow these instructions to get a copy of the project up and running on your local machine.
+### Patient View
+
+| Feature | Recruiter-Relevant Detail |
+| --- | --- |
+| AR home navigation | Camera-based navigation surface with compass calibration, heading smoothing, step detection, and real-world bearing math |
+| AI companion, "Digi" | Groq-powered conversational support with voice/text input paths and graceful text-only fallback |
+| Daily reminders | Accessible reminder flow for medication, meals, hydration, and routine prompts |
+| Memory album | Family-shared photos and captions shown in a patient-friendly visual album |
+| Voice messages | Audio-based connection between patient, family, and caregivers |
+| Emergency SOS | Large slider interaction designed to prevent accidental activation |
+| Fall detection | Motion sensor-based potential fall trigger routed to caregiver/family alerts |
+
+### Caregiver View
+
+- Urgent alert dashboard for SOS and fall events.
+- Schedule management for daily patient reminders.
+- Voice mailbox for caregiver-patient-family communication.
+- Shared state updates for coordinated multi-role demos.
+
+### Family View
+
+- Activity timeline for patient events and care context.
+- Memory sharing with image upload and captions.
+- AI-generated comforting thoughts powered by Groq.
+- Voice messages, schedule visibility, and urgent alert awareness.
+
+## Technical Architecture
+
+| Layer | Implementation |
+| --- | --- |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS |
+| State | React Context reducer-based app state in `src/context/` |
+| AI | Groq API routed through backend/demo server endpoints |
+| Realtime | WebSocket service and isolated Express demo relay in `demo-server/` |
+| Native/mobile | Capacitor Android, local notifications, native voice/audio integrations |
+| Sensors | Camera, DeviceOrientation, DeviceMotion, accelerometer-based fall/step flows |
+| Testing | Vitest unit tests for reducer/routing/AI companion behavior; Playwright available for E2E |
+
+## Repository Structure
+
+```text
+src/
+  components/
+    patient/      Patient-first mobile flows: AR, AI companion, reminders, memory album
+    caregiver/    Caregiver dashboard and schedule management
+    family/       Family portal, memory sharing, quotes, timeline
+    shared/       Cross-role UI and notification components
+    icons/        Local icon components
+  context/        Global state, reducer, remote action routing
+  hooks/          Device and browser capability hooks
+  services/       AI, realtime WebSocket, notifications, audio, speech
+  assets/         Audio assets used for alerts and voice demos
+
+demo-server/      Express + WebSocket relay for multi-device presentations
+public/           Static browser assets
+scripts/          Verification and tunnel helper scripts
+```
+
+## Technical Details
+
+Memora includes several implementation details that go beyond a standard CRUD-style app:
+
+- **AR navigation:** uses camera access, `deviceorientation`, heading smoothing, compass calibration, and relative bearing math to guide a patient indoors.
+- **Step and fall signals:** reads motion sensor data through `devicemotion` for step detection and potential fall alert flows.
+- **Realtime care loop:** broadcasts important events through the demo WebSocket relay so Patient, Caregiver, and Family views stay in sync during presentations.
+- **AI boundary:** routes Groq-powered AI companion and quote generation through server endpoints so API keys stay out of the browser bundle.
+- **Native-ready mobile path:** supports Capacitor Android builds with local notifications, voice features, and physical-device testing.
+
+## Getting Started
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v18 or newer recommended)
-- `npm` package manager (project scripts and docs use npm)
-- A valid **Google Gemini API Key**. You can get one from [Google AI Studio](https://aistudio.google.com/app/apikey).
+- Node.js 18 or newer
+- npm
+- Groq API key from [Groq Console](https://console.groq.com/keys)
+- Android Studio for native Android builds
+- `mkcert` for trusted HTTPS mobile browser testing
 
-### Installation & Setup
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/your-username/memora-app.git
-    cd memora-app
-    ```
-
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-
-3.  **Set up your environment variables (server-side AI key):**
-    The Gemini key must be configured on the backend, not in the browser bundle.
-    For local development with the demo server, add this in `demo-server/.env` (or your shell):
-    ```
-    GEMINI_API_KEY=YOUR_GEMINI_API_KEY
-    ```
-    Optional:
-    - `GEMINI_MODEL` (defaults to `gemini-2.5-flash`)
-    - `VITE_AI_API_BASE_URL` for frontend deployments where AI API is hosted on a different origin.
-
-## 🏃 Running the Development Server
-
-### For Desktop Development
-
-You can start the server immediately for development on your computer.
-
-1.  **Start the server:**
-    ```bash
-    npm run dev
-    ```
-2.  **Open in your browser:**
-    Navigate to the local HTTPS URL provided (e.g., `https://localhost:5173`). Your browser will show a security warning because the SSL certificate is self-signed. You can safely click "Advanced" and proceed to the site.
-
-### For Mobile Device Testing (Recommended)
-
-To test features like the camera, AR navigation, and fall detection, you **must** run the app on a physical mobile device using a trusted SSL certificate.
-
-This is a **one-time setup** that creates a trusted certificate on your machine.
-
-1.  **Install `mkcert`:**
-    Follow the official instructions for your operating system on the [mkcert repository](https://github.com/FiloSottile/mkcert). On macOS with Homebrew, for example, run: `brew install mkcert`.
-
-2.  **Create a local Certificate Authority:**
-    In your terminal, run the following command. You may be prompted for your password.
-    ```bash
-    mkcert -install
-    ```
-
-3.  **Generate Certificate Files:**
-    In the root directory of this project, run:
-    ```bash
-    mkcert localhost
-    ```
-    This creates two files: `localhost.pem` and `localhost-key.pem`. The dev server will automatically detect and use them.
-
-4.  **Run the Server & Connect:**
-    a. Make sure your computer and mobile phone are on the **same Wi--Fi network**.
-    b. Start the dev server:
-       ```bash
-       npm run dev
-       ```
-    c. The terminal will output a "Network" URL (e.g., `https://192.168.1.10:5173`).
-    d. Open your phone's browser and go to that Network URL. The page should load securely without any warnings.
-    e. Grant camera and motion sensor permissions when prompted.
-
-## 📱 Building for Android with Capacitor (APK)
-
-Follow these steps to package the web app into a native Android APK file that you can install directly on a device.
-
-### Prerequisites
-
--   [Android Studio](https://developer.android.com/studio) installed on your machine.
-
-### 1. Install Capacitor Dependencies
-
-In your project's root directory, run the following commands to add Capacitor's command-line tool (CLI), core library, and the Android platform library.
+### Install
 
 ```bash
-# Recommended: install Capacitor v7 to match the project's dependencies
-npm install @capacitor/cli@^7.4.3 @capacitor/core@^7.4.3 @capacitor/android@^7.4.3
+git clone https://github.com/your-username/memora-app.git
+cd memora-app
+npm install
 ```
 
-### 2. Add the Android Platform
+### Configure Groq
 
-Capacitor will now generate a complete native Android project inside your project.
+For local development with the demo server, put the Groq key in `demo-server/.env` or your shell:
 
 ```bash
-npx cap add android
+GROQ_API_KEY=YOUR_GROQ_API_KEY
 ```
 
-This creates a new `android` folder in your project. This is a real Android project that you can open in Android Studio.
+Optional environment variables:
 
-### 3. Build Your Web App
+```bash
+GROQ_MODEL=llama-3.1-8b-instant
+VITE_AI_API_BASE_URL=http://localhost:8081
+```
 
-Create a production-ready build of your React app. This command bundles all your code into a `dist` folder, which is what the native app will use.
+## Run Locally
+
+### Frontend
+
+```bash
+npm run dev
+```
+
+Open the HTTPS local URL printed by Vite, usually `https://localhost:5173`.
+
+### Demo WebSocket Server
+
+```bash
+npm --prefix demo-server install
+npm --prefix demo-server start
+```
+
+Use this when presenting multiple devices or browser windows as Patient, Caregiver, and Family.
+
+### Build
 
 ```bash
 npm run build
 ```
 
-### 4. Sync Your Web Build with Android
+## Mobile Device Testing
 
-This command copies your web files from the `dist` folder into the native Android project. You should run this command every time you make changes to your web code and want to update the native app.
+Camera, motion sensors, microphone, and notification flows should be tested on a real device.
 
 ```bash
-npx cap sync android
+mkcert -install
+mkcert localhost
+npm run dev
 ```
-Capacitor will also try to automatically configure permissions in the Android project based on the Web APIs you use (like camera and microphone).
 
-### 5. Open the Project in Android Studio
+Then open the Vite network URL on a phone connected to the same Wi-Fi network and grant the requested permissions.
 
-Now, you can open your native Android project.
+## Android Build
+
+This project uses Capacitor v7.
 
 ```bash
+npm install
+npm run build
+npx cap sync android
 npx cap open android
 ```
 
-This will launch Android Studio and load your project.
+Build the APK from Android Studio via **Build > Build Bundle(s) / APK(s) > Build APK(s)**. The generated debug APK is usually located at:
 
-### 6. Build the APK in Android Studio
-
-Once the project is open and has finished its initial sync/build (this can take a few minutes the first time), you can create the APK.
-
-1.  In the Android Studio top menu, go to **Build** -> **Build Bundle(s) / APK(s)** -> **Build APK(s)**.
-2.  Android Studio will start building. Once it's finished, a small notification will pop up in the bottom-right corner.
-3.  Click the **"locate"** link in the notification to open the folder containing your APK file. It is usually at `android/app/build/outputs/apk/debug/app-debug.apk`.
-4.  Transfer `app-debug.apk` to your Android phone and install it.
-
-### Additional native configuration (recommended)
-
-After you add the platforms and sync, you should manually add privacy strings and permissions into the native projects. The JS/TS code may attempt to call Capacitor `Permissions` or `LocalNotifications`, but the native platforms still require the proper manifest/Info.plist entries.
-
-- iOS (`ios/App/App/Info.plist`) — add these keys with descriptive messages:
-    - `NSCameraUsageDescription`
-    - `NSMicrophoneUsageDescription`
-    - `NSMotionUsageDescription` (for fall detection / step counting)
-    - `NSBluetoothAlwaysUsageDescription` and/or `NSBluetoothPeripheralUsageDescription` (if you enable BLE)
-
-- Android (`android/app/src/main/AndroidManifest.xml`) — example entries for Android 12+ (add as needed):
-    - `<uses-permission android:name="android.permission.CAMERA" />`
-    - `<uses-permission android:name="android.permission.RECORD_AUDIO" />`
-    - `<uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />`
-    - `<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />`
-    - `<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />`
-    - `<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />`
-
-These entries are required for runtime permission flows on Android and for iOS privacy disclosures. Make sure to test on device after adding them.
-
-### Capacitor Local Notifications
-
-If you want reliable reminders and alarms while the app is running in the background on native devices, install and configure Capacitor Local Notifications:
-
-1. Install the plugin in your web project:
-
-```bash
-npm install @capacitor/local-notifications
-npx cap sync
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-2. Open the native project in Android Studio / Xcode and ensure the plugin is present. Add any platform-specific notification channel setup on Android, and ensure you add any required Info.plist keys on iOS.
-
-3. The app contains a JS wrapper at `src/services/localNotifications.ts` which will attempt to use the plugin at runtime. Use `localNotifications.requestPermission()` to prompt the user and `localNotifications.schedule({...})` to schedule reminders.
-
-### Native Speech Recognition For AI Companion (Android)
-
-AI Companion now prefers a native speech path on Capacitor Android builds for better reliability than Web Speech API in mobile browsers/WebView.
-
-1. Install the speech plugin in your web project:
-
-```bash
-npm install @capacitor-community/speech-recognition
-npx cap sync android
-npm run verify:voice
-```
-
-2. Rebuild and run the native app:
+For native voice verification and sync:
 
 ```bash
 npm run build:android
 ```
 
-3. In AI Companion diagnostics, verify:
-- `native platform yes`
-- `native plugin yes`
-- `Run voice self-test` returns a pass/fail message and captures a short transcript when successful.
-- If unavailable, diagnostics should show a specific `reasonCode` (for example: `plugin_sync_missing`, `recognizer_unavailable`, `bridge_unimplemented`) plus a recovery action.
+## Validation
 
-Support matrix for this repo:
-- Guaranteed voice: Android native app (with plugin synced) and Chrome desktop web.
-- Other browsers/environments: AI Companion will switch to text-only mode with explicit diagnostics and recovery steps.
+```bash
+npm run build
+npm run test:run
+npm run verify:voice
+```
 
-If the plugin is not installed/synced, AI Companion will remain text-only on Android.
+Manual validation should cover reminders, SOS/fall alert routing, Groq AI responses, voice playback, AR navigation on a physical mobile device, and multi-device sync through `demo-server/`.
+
+## Engineering Highlights
+
+- Designing an accessible patient UI for cognitive load, not just visual polish.
+- Handling browser/native capability differences across speech, sensors, camera, and notifications.
+- Routing AI calls through a backend boundary instead of exposing the Groq key in the client bundle.
+- Building a realtime demo architecture that is simple enough for hackathon presentation but structured enough to evolve.
+- Using deterministic AR debug cases to validate device-heading math.
+
+## Team Achievement
+
+Memora was built as a competition project and recognized across multiple national-level events. The project reflects fast product execution, technical breadth, and a strong focus on healthcare impact.
 
 ---
 
-## Detailed Capacitor Android build (explicit commands & versions)
-
-This project uses Capacitor v7 (see `package.json`). To avoid version mismatches, use the versions below when installing/upgrading Capacitor or plugins.
-
-- Capacitor core & CLI: `^7.4.3`
-- Capacitor Android: `^7.4.3`
-
-Recommended exact sequence (run from project root):
-
-1) Install dependencies (if not already):
-
-```sh
-npm install
-```
-
-2) (Optional) Ensure Capacitor CLI/core/android versions match the project. If you need to install or re-install them explicitly:
-
-```sh
-# install Capacitor 7 CLI/core/android matching the project's package.json
-npm install --save-dev @capacitor/cli@^7.4.3
-npm install @capacitor/core@^7.4.3 @capacitor/android@^7.4.3
-```
-
-3) Build the web assets (Vite will output them to `dist/`):
-
-```sh
-npm run build
-```
-
-4) Copy/sync the web assets into the Android project and sync plugins
-
-```sh
-npx cap sync android
-```
-
-5) (Optional) If you added the Local Notifications plugin, install & sync it now:
-
-```sh
-npm install @capacitor/local-notifications@^7.0.3
-npx cap sync android
-```
-
-6) Open Android Studio
-
-```sh
-npx cap open android
-```
-
-7) Build an APK (via Android Studio) or from the command line:
-
-Android Studio: Build -> Build Bundle(s) / APK(s) -> Build APK(s)
-
-Command line (from repo root):
-
-```sh
-npx cap copy android
-cd android
-./gradlew assembleDebug
-# built APK: android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-Notes on Local Notifications and runtime permissions
-- After installing `@capacitor/local-notifications`, you must request permission at runtime before scheduling notifications. Example (JS):
-
-```ts
-import { LocalNotifications } from '@capacitor/local-notifications';
-
-async function requestNotificationPermission() {
-    const perm = await LocalNotifications.requestPermissions();
-    return perm;
-}
-
-async function scheduleExample() {
-    await LocalNotifications.schedule({
-        notifications: [
-            {
-                id: 1,
-                title: 'Reminder',
-                body: 'This is a scheduled reminder',
-                schedule: { at: new Date(Date.now() + 5000) }
-            }
-        ]
-    });
-}
-```
-
-AndroidManifest permission snippets (add or ensure present in `android/app/src/main/AndroidManifest.xml`):
-
-```xml
-<!-- Required permissions for camera, microphone, and newer Bluetooth/location flags -->
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.CAMERA" />
-<uses-permission android:name="android.permission.RECORD_AUDIO" />
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-<uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
-<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-```
-
-Runtime permission request examples (call these before using microphone/camera):
-
-Using web APIs (`getUserMedia`) will trigger a system prompt in browser/WebView. For native speech recognition, request microphone permission through the speech plugin flow used in `src/services/nativeSpeechService.ts`.
-
-Example: request microphone/camera using browser APIs:
-
-```ts
-async function ensureCameraAndMic() {
-    try {
-        await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-        return true;
-    } catch (e) {
-        console.warn('Permission denied for camera or microphone', e);
-        return false;
-    }
-}
-```
-
-Version compatibility sanity
-- This repo's `package.json` already pins Capacitor packages to `^7.4.3`. When installing plugins, prefer versions compatible with Capacitor v7 (for example, `@capacitor/local-notifications@^7.0.3`). If you use `npm install` with no version, verify plugin versions in `package.json` and run `npx cap doctor` to detect obvious mismatches.
-
-Troubleshooting tips
-- If Android Studio reports Gradle or AndroidX incompatible versions after `npx cap open android`, run `npx cap sync android` again and make sure your Android SDK and Android Studio are up-to-date. If necessary, update Gradle wrapper via Android Studio prompts.
-- If WebView content doesn't show up after installing platforms, ensure `dist/` exists (re-run `npm run build`) and then `npx cap copy android`.
-
-If you'd like, I can add a `build:android` script to `package.json` that runs `npm run build && npx cap sync android` and add a short `README_ANDROID.md` with these exact steps. Tell me if you'd like that added and I'll implement it.
+<p align="center">
+  <strong>Memora</strong> - AI-assisted care, safer routines, and stronger family connection for dementia support.
+</p>

@@ -1,4 +1,4 @@
-const { generateGeminiText } = require('../_lib/gemini');
+const { generateGroqText } = require('../_lib/groq');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -6,7 +6,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const text = await generateGeminiText({
+    const text = await generateGroqText({
       prompt: 'Generate one short, comforting, uplifting sentence suitable for someone experiencing memory loss.',
       systemInstruction: 'Return only one plain sentence, warm and reassuring.',
     });

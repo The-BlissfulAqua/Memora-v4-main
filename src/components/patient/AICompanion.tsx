@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { getAICompanionChatResponse, isGeminiConfigured, missingApiKeyError } from '../../services/geminiService';
+import { getAICompanionChatResponse, isAiConfigured, missingApiKeyError } from '../../services/aiService';
 import MicrophoneIcon from '../icons/MicrophoneIcon';
 import voskSpeechService from '../../services/voskSpeechService';
 import { useAppContext } from '../../context/AppContext';
@@ -269,7 +269,7 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
   const { state } = useAppContext();
   const devMode = state.devMode;
   const [messages, setMessages] = useState<Message[]>(() => [
-    { sender: 'ai', text: isGeminiConfigured ? "Hello! I'm Digi, your friendly companion. How are you feeling today?" : missingApiKeyError }
+    { sender: 'ai', text: isAiConfigured ? "Hello! I'm Digi, your friendly companion. How are you feeling today?" : missingApiKeyError }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -1029,8 +1029,8 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
           </div>
           <div className="ml-3">
             <h2 className="font-display text-xl font-semibold text-[#F5F0E8]">Your Companion, Digi</h2>
-            <p className={`text-xs font-medium ${isGeminiConfigured ? 'text-[#C9B896]' : 'text-[#E8C4A0]'}`}>
-              {isGeminiConfigured ? 'Online' : 'Limited'}
+            <p className={`text-xs font-medium ${isAiConfigured ? 'text-[#C9B896]' : 'text-[#E8C4A0]'}`}>
+              {isAiConfigured ? 'Online' : 'Limited'}
             </p>
           </div>
         </div>
@@ -1074,12 +1074,12 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder={isListening ? 'Listening...' : 'Type a message...'}
           className="flex-grow px-4 py-3 bg-[rgba(45,36,56,0.5)] border border-[rgba(255,255,255,0.06)] rounded-full text-[#F5F0E8] placeholder-[#7A7582] focus:outline-none focus:border-[rgba(184,169,201,0.3)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={isLoading || !isGeminiConfigured}
+          disabled={isLoading || !isAiConfigured}
         />
         <button
           type="button"
           onClick={handleListen}
-          disabled={isLoading || isVoiceSelfTesting || !isGeminiConfigured || voiceMode === 'unsupported'}
+          disabled={isLoading || isVoiceSelfTesting || !isAiConfigured || voiceMode === 'unsupported'}
           className={`flex-shrink-0 w-12 h-12 rounded-full transition-all duration-200 flex items-center justify-center focus:outline-none touch-feedback ${
             isListening
               ? 'bg-[#E07A7A] text-white animate-pulse shadow-[0_4px_20px_rgba(224,122,122,0.4)]'
@@ -1093,7 +1093,7 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
         <button
           type="button"
           onClick={handleSend}
-          disabled={isLoading || isVoiceSelfTesting || input.trim() === '' || !isGeminiConfigured}
+          disabled={isLoading || isVoiceSelfTesting || input.trim() === '' || !isAiConfigured}
           className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#B8A9C9] to-[#9D8AA5] text-white font-bold rounded-full disabled:opacity-50 disabled:cursor-not-allowed touch-feedback flex items-center justify-center"
           aria-label="Send message"
         >

@@ -192,6 +192,8 @@ const App: React.FC = () => {
 
   // Effect for checking reminders
   useEffect(() => {
+    if (viewMode !== ViewMode.PATIENT) return;
+
     // Maintain a map of active timers so we can clear them on update/unmount
     const timers: Array<{ id: string; timerId: number }> = [];
 
@@ -245,50 +247,46 @@ const App: React.FC = () => {
               ]
             );
 
-            const isPatientView = (currentViewRef.current === ViewMode.PATIENT);
-            console.log('[App] Reminder triggered, isPatientView:', isPatientView, 'isNative:', localNotifications.isNative);
-            if (isPatientView) {
-              let webNotification: any = null;
-              try {
-                const perm = await localNotifications.requestPermission();
-                console.log('[App] Notification permission:', perm);
-                if (perm !== 'granted') {
-                  console.warn('[App] notification permission not granted, skipping visible notification');
-                } else {
-                  const res = await localNotifications.schedule({ 
-                    id: Date.now(), 
-                    title: reminder.title, 
-                    body: reminder.title,
-                    extra: { reminderId: reminder.id, title: reminder.title }
-                  });
-                  console.log('[App] Notification schedule result:', res, 'typeof:', typeof res);
-                  if (res && typeof (res as any).close === 'function') {
-                    webNotification = res;
-                  }
-                }
-              } catch (e) {
-                console.warn('Error requesting permission or scheduling notification', e);
-              }
-
-              if (audioEl && webNotification) {
-                const onEnded = () => {
-                  try { webNotification.close && webNotification.close(); } catch (e) { /* ignore */ }
-                  audioEl.removeEventListener('ended', onEnded);
-                };
-                const minDisplayMs = 5000;
-                let closed = false;
-                const closeOnce = () => {
-                  if (closed) return;
-                  closed = true;
-                  try { webNotification.close && webNotification.close(); } catch (e) { /* ignore */ }
-                  audioEl.removeEventListener('ended', onEnded);
-                };
-                setTimeout(closeOnce, minDisplayMs);
-                audioEl.addEventListener('ended', () => {
-                  setTimeout(closeOnce, Math.max(0, minDisplayMs - (audioEl.duration * 1000 || 0)));
+            let webNotification: any = null;
+            try {
+              const perm = await localNotifications.requestPermission();
+              console.log('[App] Notification permission:', perm);
+              if (perm !== 'granted') {
+                console.warn('[App] notification permission not granted, skipping visible notification');
+              } else {
+                const res = await localNotifications.schedule({ 
+                  id: Date.now(), 
+                  title: reminder.title, 
+                  body: reminder.title,
+                  extra: { reminderId: reminder.id, title: reminder.title }
                 });
-                try { webNotification.onclick = () => { closeOnce(); }; } catch (e) { /* ignore */ }
+                console.log('[App] Notification schedule result:', res, 'typeof:', typeof res);
+                if (res && typeof (res as any).close === 'function') {
+                  webNotification = res;
+                }
               }
+            } catch (e) {
+              console.warn('Error requesting permission or scheduling notification', e);
+            }
+
+            if (audioEl && webNotification) {
+              const onEnded = () => {
+                try { webNotification.close && webNotification.close(); } catch (e) { /* ignore */ }
+                audioEl.removeEventListener('ended', onEnded);
+              };
+              const minDisplayMs = 5000;
+              let closed = false;
+              const closeOnce = () => {
+                if (closed) return;
+                closed = true;
+                try { webNotification.close && webNotification.close(); } catch (e) { /* ignore */ }
+                audioEl.removeEventListener('ended', onEnded);
+              };
+              setTimeout(closeOnce, minDisplayMs);
+              audioEl.addEventListener('ended', () => {
+                setTimeout(closeOnce, Math.max(0, minDisplayMs - (audioEl.duration * 1000 || 0)));
+              });
+              try { webNotification.onclick = () => { closeOnce(); }; } catch (e) { /* ignore */ }
             }
           } catch (e) {
             console.error('Error in reminder timer handler', e);
@@ -306,7 +304,7 @@ const App: React.FC = () => {
     return () => {
       timers.forEach(t => clearTimeout(t.timerId));
     };
-  }, [state.reminders, dispatch]);
+  }, [state.reminders, dispatch, viewMode]);
 
   // No banner logic: notifications and sounds should only occur at exact scheduled time
 

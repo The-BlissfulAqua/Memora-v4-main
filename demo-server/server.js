@@ -1,4 +1,5 @@
 const express = require('express');
+require('dotenv').config();
 const http = require('http');
 const WebSocket = require('ws');
 const bodyParser = require('body-parser');
@@ -8,8 +9,8 @@ const app = express();
 app.use(bodyParser.json());
 const fs = require('fs');
 const path = require('path');
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
 
 const companionSystemInstruction = `You are Digi, an AI companion for a person with dementia. Your core purpose is to provide comfort, gentle engagement, and a sense of calm. Follow these rules strictly:
 1. Personality: Be extremely patient, friendly, positive, and reassuring. Always use a gentle and warm tone.
@@ -19,41 +20,46 @@ const companionSystemInstruction = `You are Digi, an AI companion for a person w
 5. Encouragement: Do not test memory; offer gentle prompts and reassuring questions.
 6. Engagement: Ask one simple supportive question at a time.`;
 
-const extractGeminiText = (body) =>
-  body?.candidates?.[0]?.content?.parts
-    ?.map((p) => (typeof p?.text === 'string' ? p.text : ''))
-    .join('')
-    .trim() || '';
+const extractGroqText = (body) =>
+  body?.choices?.[0]?.message?.content?.trim?.() || '';
 
-async function generateGeminiText({ prompt, systemInstruction }) {
-  if (!GEMINI_API_KEY) {
-    const err = new Error('Missing server GEMINI_API_KEY');
+async function generateGroqText({ prompt, systemInstruction }) {
+  if (!GROQ_API_KEY) {
+    const err = new Error('Missing server GROQ_API_KEY');
     err.statusCode = 503;
     throw err;
   }
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
-        contents: [{ parts: [{ text: prompt }] }],
-      }),
-    }
-  );
+  const messages = [];
+  if (systemInstruction) {
+    messages.push({ role: 'system', content: systemInstruction });
+  }
+  messages.push({ role: 'user', content: prompt });
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${GROQ_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages,
+      temperature: 0.7,
+      max_tokens: 180,
+    }),
+  });
 
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const err = new Error(body?.error?.message || `Gemini request failed (${response.status})`);
+    const err = new Error(body?.error?.message || `Groq request failed (${response.status})`);
     err.statusCode = response.status;
     throw err;
   }
 
-  const text = extractGeminiText(body);
+  const text = extractGroqText(body);
   if (!text) {
-    const err = new Error('Gemini returned empty content');
+    const err = new Error('Groq returned empty content');
     err.statusCode = 502;
     throw err;
   }
@@ -89,7 +95,7 @@ app.post('/api/ai/companion', async (req, res) => {
   try {
     const prompt = `${req.body?.prompt || ''}`.trim();
     if (!prompt) return res.status(400).json({ error: 'prompt is required' });
-    const text = await generateGeminiText({ prompt, systemInstruction: companionSystemInstruction });
+    const text = await generateGroqText({ prompt, systemInstruction: companionSystemInstruction });
     return res.json({ text });
   } catch (err) {
     const status = err.statusCode || 500;
@@ -99,7 +105,7 @@ app.post('/api/ai/companion', async (req, res) => {
 
 app.post('/api/ai/quote', async (_req, res) => {
   try {
-    const text = await generateGeminiText({
+    const text = await generateGroqText({
       prompt: 'Generate one short, comforting, uplifting sentence suitable for someone experiencing memory loss.',
       systemInstruction: 'Return only one plain sentence, warm and reassuring.',
     });

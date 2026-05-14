@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { getAIComfortingQuote, isGeminiConfigured, missingApiKeyError } from '../../services/geminiService';
+import { getAIComfortingQuote, isAiConfigured, missingApiKeyError } from '../../services/aiService';
 import { Memory, SharedQuote, EventLogItem, VoiceMessage, SenderRole } from '../../types';
 import PillIcon from '../icons/PillIcon';
 import ForkKnifeIcon from '../icons/ForkKnifeIcon';
@@ -89,7 +89,7 @@ const FamilyView: React.FC = () => {
   };
 
   const handleSendAIQuote = async () => {
-    if (!isGeminiConfigured) { toastService.show(missingApiKeyError, 'error', 5000); return; }
+    if (!isAiConfigured) { toastService.show(missingApiKeyError, 'error', 5000); return; }
     setIsSendingQuote(true);
     try {
       const quoteText = await getAIComfortingQuote();
@@ -341,7 +341,7 @@ const FamilyView: React.FC = () => {
         <div className="space-y-3">
           <button
             onClick={handleSendAIQuote}
-            disabled={isSendingQuote || !isGeminiConfigured}
+            disabled={isSendingQuote || !isAiConfigured}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-br from-[#C49868] to-[#A89060] text-white font-medium rounded-xl touch-feedback disabled:opacity-50 disabled:cursor-not-allowed text-[14px]"
           >
             {isSendingQuote ? 'Generating...' : <> <MusicIcon className="w-4 h-4"/> Generate & Send Thought </>}

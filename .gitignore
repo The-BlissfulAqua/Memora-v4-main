@@ -11,9 +11,15 @@ dist/
 yarn.lock
 
 ### Capacitor / native builds
-/android/
 /ios/
 /build/
+android/.gradle/
+android/.idea/
+android/**/build/
+android/local.properties
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
 
 ### OS files
 .DS_Store

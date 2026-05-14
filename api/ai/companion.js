@@ -1,4 +1,4 @@
-const { generateGeminiText } = require('../_lib/gemini');
+const { generateGroqText } = require('../_lib/groq');
 
 const companionSystemInstruction = `You are Digi, an AI companion for a person with dementia. Your core purpose is to provide comfort, gentle engagement, and a sense of calm. Follow these rules strictly:
 1. Personality: Be extremely patient, friendly, positive, and reassuring. Always use a gentle and warm tone.
@@ -17,7 +17,7 @@ module.exports = async (req, res) => {
     const prompt = `${req.body?.prompt || ''}`.trim();
     if (!prompt) return res.status(400).json({ error: 'prompt is required' });
 
-    const text = await generateGeminiText({ prompt, systemInstruction: companionSystemInstruction });
+    const text = await generateGroqText({ prompt, systemInstruction: companionSystemInstruction });
     return res.status(200).json({ text });
   } catch (err) {
     return res.status(err.statusCode || 500).json({ error: err.message || 'AI companion request failed' });

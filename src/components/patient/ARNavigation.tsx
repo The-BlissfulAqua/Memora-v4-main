@@ -154,7 +154,7 @@ const ARNavigation: React.FC<ARNavigationProps> = ({ onBack }) => {
     } catch (err) {
         console.error("Permission error:", err);
         if (err instanceof DOMException && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
-             setPermissionError("Camera access was denied. Please enable it in your browser settings.");
+             setPermissionError("Camera access was denied. Enable Camera permission in Android app settings and try again.");
         } else {
              setPermissionError("Could not access camera. It may be in use by another app.");
         }
@@ -189,19 +189,25 @@ const ARNavigation: React.FC<ARNavigationProps> = ({ onBack }) => {
     switch (navState) {
       case 'REQUESTING_PERMISSIONS':
         return (
-          <div className="flex flex-col items-center justify-center text-center h-full text-[#F5F0E8] p-4">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#B8A9C9] to-[#9D8AA5] mb-6 text-3xl">
-              🧭
+          <div className="relative flex h-full w-full items-center justify-center overflow-hidden text-center text-[#F5F0E8] p-4">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(212,168,120,0.18),transparent_32%),radial-gradient(circle_at_15%_78%,rgba(164,149,184,0.18),transparent_34%),linear-gradient(180deg,#1A1423_0%,#12101A_100%)]" />
+            <div className="absolute -top-20 -right-24 h-64 w-64 rounded-full bg-[#A495B8]/20 blur-3xl" />
+            <div className="absolute -bottom-16 -left-24 h-72 w-72 rounded-full bg-[#D4A878]/10 blur-3xl" />
+            <div className="absolute inset-x-8 top-24 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+            <div className="relative z-10 w-full max-w-sm rounded-[2rem] border border-white/10 bg-[rgba(30,26,42,0.72)] px-6 py-9 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-[#D4A878] to-[#A495B8] text-4xl shadow-[0_12px_36px_rgba(180,130,140,0.35)]">
+                🧭
+              </div>
+              <h2 className="font-display text-4xl font-semibold tracking-[-0.04em]">AR Navigation</h2>
+              <p className="mx-auto mt-4 max-w-xs text-[15px] leading-7 text-[#B8B0C4]">This feature requires access to your camera and motion sensors before the live view can begin.</p>
+              <button
+                onClick={handleStart}
+                className="mt-8 w-full rounded-full bg-gradient-to-br from-[#D4A878] to-[#A495B8] px-8 py-4 text-lg font-semibold text-white shadow-[0_18px_48px_rgba(164,149,184,0.32)] touch-feedback disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Grant Permissions
+              </button>
+              {permissionError && <p className="mx-auto mt-5 max-w-xs text-sm leading-6 text-[#E07A7A]">{permissionError}</p>}
             </div>
-            <h2 className="font-display text-3xl font-semibold">AR Navigation</h2>
-            <p className="mt-3 text-[#A8A0B4] max-w-xs">This feature requires access to your camera and motion sensors.</p>
-            <button
-              onClick={handleStart}
-              className="mt-8 px-8 py-4 bg-gradient-to-br from-[#B8A9C9] to-[#9D8AA5] text-white font-semibold text-lg rounded-full shadow-lg touch-feedback disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Grant Permissions
-            </button>
-            {permissionError && <p className="text-sm text-[#E07A7A] mt-4 max-w-xs">{permissionError}</p>}
           </div>
         );
 
@@ -242,8 +248,12 @@ const ARNavigation: React.FC<ARNavigationProps> = ({ onBack }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-[#1A1423] overflow-hidden flex flex-col justify-between">
-      <video ref={videoRef} autoPlay muted playsInline className="absolute inset-0 w-full h-full object-cover" />
-      <div className="absolute inset-0 bg-black/30"></div>
+      {streamRef.current && navState !== 'REQUESTING_PERMISSIONS' && (
+        <>
+          <video ref={videoRef} autoPlay muted playsInline className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-black/30"></div>
+        </>
+      )}
       
       <header className="relative p-4 flex justify-between items-center glass-card z-10 rounded-none border-b border-[rgba(255,255,255,0.06)]">
         <button onClick={handleFinish} className="text-[#F5F0E8] text-sm p-2 rounded-xl glass-card touch-feedback flex items-center gap-1">

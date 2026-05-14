@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useEffect } from 'react';
 import AICompanion from '../AICompanion';
-import { getAICompanionChatResponse } from '../../../services/geminiService';
+import { getAICompanionChatResponse } from '../../../services/aiService';
+import { AppProvider, useAppContext } from '../../../context/AppContext';
 
 const voskSpeechMock = vi.hoisted(() => ({
   isNativePlatform: vi.fn(() => false),
@@ -14,8 +16,8 @@ const voskSpeechMock = vi.hoisted(() => ({
   cleanup: vi.fn(async () => {}),
 }));
 
-vi.mock('../../../services/geminiService', () => ({
-  isGeminiConfigured: true,
+vi.mock('../../../services/aiService', () => ({
+  isAiConfigured: true,
   missingApiKeyError: 'missing',
   getAICompanionChatResponse: vi.fn(async (prompt: string) => `AI: ${prompt}`),
 }));
@@ -23,6 +25,25 @@ vi.mock('../../../services/geminiService', () => ({
 vi.mock('../../../services/voskSpeechService', () => ({
   default: voskSpeechMock,
 }));
+
+const DevModeTestHarness = () => {
+  const { dispatch } = useAppContext();
+
+  useEffect(() => {
+    dispatch({ type: 'SET_DEV_MODE', payload: true });
+    // The app provider wraps dispatch with render-scoped state, so this test setup must run once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return <AICompanion onBack={() => {}} />;
+};
+
+const renderAICompanion = () =>
+  render(
+    <AppProvider>
+      <DevModeTestHarness />
+    </AppProvider>
+  );
 
 class MockSpeechRecognition {
   static lastInstance: MockSpeechRecognition | null = null;
@@ -92,7 +113,7 @@ describe('AICompanion', () => {
   });
 
   it('sends typed message on Enter', async () => {
-    render(<AICompanion onBack={() => {}} />);
+    renderAICompanion();
 
     const input = screen.getByPlaceholderText('Type a message...');
     fireEvent.change(input, { target: { value: 'hello there' } });
@@ -106,7 +127,7 @@ describe('AICompanion', () => {
   });
 
   it('captures microphone transcript and sends once when recognition ends', async () => {
-    render(<AICompanion onBack={() => {}} />);
+    renderAICompanion();
 
     const micButton = await screen.findByLabelText('Start listening');
     await waitFor(() => {
@@ -134,7 +155,7 @@ describe('AICompanion', () => {
     (window as any).SpeechRecognition = undefined;
     (window as any).webkitSpeechRecognition = undefined;
 
-    render(<AICompanion onBack={() => {}} />);
+    renderAICompanion();
 
     expect(await screen.findByText('Voice mode: Unavailable (text only)')).toBeInTheDocument();
     expect(await screen.findByText(/Voice status: text-only \(speech_api_unavailable\)/)).toBeInTheDocument();
@@ -149,7 +170,7 @@ describe('AICompanion', () => {
     });
     voskSpeechMock.ensurePermission.mockResolvedValue({ granted: true });
 
-    render(<AICompanion onBack={() => {}} />);
+    renderAICompanion();
 
     expect(await screen.findByText(/Voice mode: Native/)).toBeInTheDocument();
     expect(await screen.findByText(/Voice status: native \(ok\)/)).toBeInTheDocument();
@@ -163,7 +184,7 @@ describe('AICompanion', () => {
       modelDownloaded: false,
     });
 
-    render(<AICompanion onBack={() => {}} />);
+    renderAICompanion();
 
     expect(await screen.findByText(/Voice mode: Unavailable/)).toBeInTheDocument();
     expect(await screen.findByText(/Voice status: native \(model_not_downloaded\)/)).toBeInTheDocument();

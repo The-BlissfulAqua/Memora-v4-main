@@ -9,12 +9,12 @@ cd demo-server
 npm install
 ```
 
-Set Gemini env vars (required for AI Companion/quote endpoints):
+Set Groq env vars (required for AI Companion/quote endpoints):
 
 ```bash
-export GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+export GROQ_API_KEY=YOUR_GROQ_API_KEY
 # optional:
-# export GEMINI_MODEL=gemini-2.5-flash
+# export GROQ_MODEL=llama-3.1-8b-instant
 ```
 
 2. Start the server

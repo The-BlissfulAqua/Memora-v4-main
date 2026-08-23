@@ -1,4 +1,4 @@
-const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 
 const extractGroqText = (body) =>
   body?.choices?.[0]?.message?.content?.trim?.() || '';
@@ -27,7 +27,8 @@ async function generateGroqText({ prompt, systemInstruction }) {
       model: GROQ_MODEL,
       messages,
       temperature: 0.7,
-      max_tokens: 180,
+      max_completion_tokens: 512,
+      reasoning_effort: 'low',
     }),
   });
 

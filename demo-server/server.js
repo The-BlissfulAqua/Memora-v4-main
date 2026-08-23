@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 const fs = require('fs');
 const path = require('path');
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 
 const companionSystemInstruction = `You are Digi, an AI companion for a person with dementia. Your core purpose is to provide comfort, gentle engagement, and a sense of calm. Follow these rules strictly:
 1. Personality: Be extremely patient, friendly, positive, and reassuring. Always use a gentle and warm tone.
@@ -46,7 +46,8 @@ async function generateGroqText({ prompt, systemInstruction }) {
       model: GROQ_MODEL,
       messages,
       temperature: 0.7,
-      max_tokens: 180,
+      max_completion_tokens: 512,
+      reasoning_effort: 'low',
     }),
   });
 

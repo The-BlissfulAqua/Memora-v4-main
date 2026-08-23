@@ -183,7 +183,7 @@ GROQ_API_KEY=YOUR_GROQ_API_KEY
 Optional environment variables:
 
 ```bash
-GROQ_MODEL=llama-3.1-8b-instant
+GROQ_MODEL=openai/gpt-oss-20b
 VITE_AI_API_BASE_URL=http://localhost:8081
 ```
 

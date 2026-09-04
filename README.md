@@ -26,12 +26,19 @@ The app combines a simplified patient interface, sensor-based safety features, a
 | Caregivers | Daily schedule management, SOS/fall alerts, realtime visibility, voice communication |
 | Family | Emotional connection, memory sharing, comforting AI-assisted messages, activity awareness |
 
+## Documentation
+
+- [Demo server and multi-device setup](docs/demo-server.md)
+- [Android QA checklist](docs/android-qa.md)
+- [Completed engineering audit](docs/history/completed-audit.md)
+- [Repository contributor instructions](AGENTS.md)
+
 ## Awards & Recognition
 
 <table>
   <tr>
     <td width="42%">
-      <img src="./HAL.jpeg" alt="HAL award won by the Memora team" />
+      <img src="./docs/assets/awards/HAL.jpeg" alt="HAL award won by the Memora team" />
     </td>
     <td>
       <h3>2nd Place - National Level Hackathon</h3>
@@ -41,7 +48,7 @@ The app combines a simplified patient interface, sensor-based safety features, a
   </tr>
   <tr>
     <td width="42%">
-      <img src="./SAI%20RAM%20COLLEGE.jpeg" alt="Sai Ram College award won by the Memora team" />
+      <img src="./docs/assets/awards/SAI%20RAM%20COLLEGE.jpeg" alt="Sai Ram College award won by the Memora team" />
     </td>
     <td>
       <h3>3rd Place - National Level Hackathon</h3>
@@ -51,7 +58,7 @@ The app combines a simplified patient interface, sensor-based safety features, a
   </tr>
   <tr>
     <td width="42%">
-      <img src="./CMR.jpeg" alt="CMR University Tech-Expo award won by the Memora team" />
+      <img src="./docs/assets/awards/CMR.jpeg" alt="CMR University Tech-Expo award won by the Memora team" />
     </td>
     <td>
       <h3>2nd Place - National Level Tech-Expo</h3>

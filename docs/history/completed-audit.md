@@ -1,4 +1,6 @@
-# Audit TODO (Prioritized)
+# Completed Engineering Audit
+
+This is a historical record of completed reliability, maintainability, and quality work. It is not an active task list.
 
 ## P0 - Critical before production/mobile release
 

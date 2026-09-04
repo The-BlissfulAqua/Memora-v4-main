@@ -21,7 +21,7 @@ npx cap sync android
 npm run verify:voice
 ```
 5. Set server env for AI endpoints:
-- `GEMINI_API_KEY` on backend (demo server or Vercel)
+- `GROQ_API_KEY` on the backend (demo server or Vercel); do not expose it in the client.
 
 ## Core Functional Scenarios
 
